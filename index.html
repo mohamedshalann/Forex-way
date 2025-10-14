@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="ar">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ForexPulse — مراقب فوركس بسيط</title>
+  <style>
+    body { font-family: system-ui, Arial; background:#0f172a; color:#e6eef8; margin:0; padding:20px; }
+    .card { background:#0b1220; border-radius:12px; padding:16px; box-shadow: 0 6px 18px rgba(2,6,23,0.6); margin-bottom:12px; }
+    header { display:flex; gap:12px; align-items:center; justify-content:space-between; }
+    select,input,button { padding:8px 10px; border-radius:8px; border:1px solid #233244; background:#071126; color:#e6eef8; }
+    #chart { width:100%; height:220px; background:#071126; border-radius:8px; display:block; }
+    .signal { font-weight:700; padding:6px 10px; border-radius:8px; display:inline-block; }
+    .buy { background:#063b13; color:#a7f3d0; border:1px solid #0b7a3a; }
+    .sell { background:#4b0505; color:#ffd7d7; border:1px solid #7a1212; }
+    .hold { background:#2b2f3a; color:#cbd5e1; border:1px solid #3b4250; }
+    small { color:#98a0b3; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <header>
+      <div>
+        <h1 style="margin:0">ForexPulse — مراقب فوركس (نسخة تجريبية)</h1>
+        <small>بيانات مجانية (exchangerate.host). هذه أداة تعليمية/مساعدة — ليست نصيحة مالية.</small>
+      </div>
+      <div>
+        <label>زوج: 
+          <select id="pair">
+            <option value="EUR/USD">EUR/USD</option>
+            <option value="GBP/USD">GBP/USD</option>
+            <option value="USD/JPY">USD/JPY</option>
+            <option value="USD/EGP">USD/EGP</option>
+            <option value="AUD/USD">AUD/USD</option>
+          </select>
+        </label>
+        <button id="startBtn">ابدأ</button>
+        <button id="stopBtn" disabled>أوقف</button>
+      </div>
+    </header>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div>آخر سعر: <span id="lastPrice">—</span></div>
+      <div>إشارة الآن: <span id="signal" class="signal hold">HOLD</span></div>
+      <div id="details" style="margin-left:auto; color:#9fb0d6; font-size:13px"></div>
+    </div>
+    <canvas id="chart"></canvas>
+    <div style="margin-top:8px;">
+      <small>ملاحظة: كن حذرًا — استخدم حساب تجريبي للاختبار قبل أي تداول حقيقي.</small>
+    </div>
+  </div>
+
+  <script>
+  // ========= إعدادات =========
+  const POLL_INTERVAL_MS = 10000; // جلب كل 10 ثواني (تعدّل حسب الحاجة)
+  const MAX_POINTS = 300;         // عدد النقاط المخزنة
+  const STORAGE_KEY = 'forexpulse_series_v1';
+
+  // ========= أدوات حساب المؤشرات =========
+  function sma(values, period) {
+    if (values.length < period) return null;
+    const slice = values.slice(-period);
+    const sum = slice.reduce((a,b)=>a+b,0);
+    return sum/period;
+  }
+
+  function ema(values, period) {
+    if (values.length === 0) return null;
+    const k = 2/(period+1);
+    let emaPrev = values[0]; // bootstrap
+    for (let i=1;i<values.length;i++){
+      emaPrev = values[i]*k + emaPrev*(1-k);
+    }
+    return emaPrev;
+  }
+
+  // RSI (classic)
+  function rsi(values, period=14) {
+    if (values.length <= period) return null;
+    let gains=0, losses=0;
+    for (let i=values.length-period; i<values.length; i++){
+      const diff = values[i] - values[i-1];
+      if (diff>0) gains += diff; else losses += Math.abs(diff);
+    }
+    if (losses===0) return 100;
+    const rs = (gains/period) / (losses/period);
+    return 100 - (100/(1+rs));
+  }
+
+  // MACD: fast EMA(12) - slow EMA(26), signal = EMA(9) of MACD line
+  function macd(values, fast=12, slow=26, signal=9) {
+    if (values.length < slow+signal) return null;
+    const macdLine = (ema(values.slice(- (slow+ signal)), fast) ?? 0) - (ema(values.slice(- (slow+ signal)), slow) ?? 0);
+    // For simplicity compute MACD over last (slow+signal) window using iterative approach:
+    // A simple implementation below computes arrays then returns last values.
+    const macdArr = [];
+    for (let i=slow; i<values.length; i++){
+      const sub = values.slice(0, i+1);
+      const f = ema(sub, fast);
+      const s = ema(sub, slow);
+      if (f!=null && s!=null) macdArr.push(f - s);
+    }
+    if (macdArr.length < signal) return null;
+    const signalVal = ema(macdArr.slice(- (signal+1)), signal);
+    return { macd: macdArr[macdArr.length-1], signal: signalVal };
+  }
+
+  // ========= إدارة السلسلة (localStorage) =========
+  function loadSeries() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      return JSON.parse(raw);
+    } catch(e) { return []; }
+  }
+  function saveSeries(series) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(series.slice(-MAX_POINTS)));
+  }
+
+  // ========= رسم بياني بسيط على Canvas =========
+  function drawChart(series, indicators) {
+    const c = document.getElementById('chart');
+    const ctx = c.getContext('2d');
+    c.width = c.clientWidth;
+    c.height = c.clientHeight;
+    ctx.clearRect(0,0,c.width,c.height);
+    if (!series.length) {
+      ctx.fillStyle = '#9fb0d6';
+      ctx.fillText('لا توجد بيانات بعد', 10,20);
+      return;
+    }
+    const prices = series.map(p=>p.price);
+    const maxP = Math.max(...prices);
+    const minP = Math.min(...prices);
+    const pad = 20;
+    const w = c.width - pad*2;
+    const h = c.height - pad*2;
+
+    function x(i){ return pad + (i/(prices.length-1 || 1)) * w; }
+    function y(val){ return pad + (1 - (val - minP)/(maxP - minP || 1)) * h; }
+
+    // price line
+    ctx.beginPath(); ctx.lineWidth=2; ctx.strokeStyle = '#6ee7b7';
+    prices.forEach((p,i)=> { if(i===0) ctx.moveTo(x(i), y(p)); else ctx.lineTo(x(i), y(p)); });
+    ctx.stroke();
+
+    // EMA9 & EMA21 if present
+    if (indicators.ema9) {
+      ctx.beginPath(); ctx.lineWidth=1.5; ctx.strokeStyle = '#93c5fd';
+      indicators.ema9.forEach((p,i)=> { if(i===0) ctx.moveTo(x(i), y(p)); else ctx.lineTo(x(i), y(p)); });
+      ctx.stroke();
+    }
+    if (indicators.ema21) {
+      ctx.beginPath(); ctx.lineWidth=1.5; ctx.strokeStyle = '#fda4af';
+      indicators.ema21.forEach((p,i)=> { if(i===0) ctx.moveTo(x(i), y(p)); else ctx.lineTo(x(i), y(p)); });
+      ctx.stroke();
+    }
+  }
+
+  // ========= جلب السعر من exchangerate.host (بدون مفتاح) =========
+  // صيغة: https://api.exchangerate.host/latest?base=EUR&symbols=USD
+  async function fetchPair(pair) {
+    const [b, q] = pair.split('/');
+    const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(b)}&symbols=${encodeURIComponent(q)}`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const j = await res.json();
+      // j.rates[q] هو السعر: 1 base = X quote
+      return { price: j.rates[q], raw: j };
+    } catch (e) {
+      console.error('fetch error', e);
+      return null;
+    }
+  }
+
+  // ========= منطق الإشارة =========
+  function computeIndicators(series) {
+    const prices = series.map(s=>s.price);
+    const ema9Arr = [];
+    const ema21Arr = [];
+    for (let i=0;i<prices.length;i++){
+      const sub = prices.slice(0,i+1);
+      const e9 = ema(sub,9);
+      const e21 = ema(sub,21);
+      ema9Arr.push(e9 ?? null);
+      ema21Arr.push(e21 ?? null);
+    }
+    const rsiVal = rsi(prices,14);
+    const macdVal = macd(prices,12,26,9);
+    return { prices, ema9Arr, ema21Arr, rsiVal, macdVal };
+  }
+
+  function decideSignal(series, indicators) {
+    const n = series.length;
+    if (n < 30) return {signal:'HOLD', reason:'حاجة لمزيد من البيانات (>=30)'};
+    const e9 = indicators.ema9Arr;
+    const e21 = indicators.ema21Arr;
+    const last = n-1;
+    const prev = n-2;
+    if (e9[prev]==null || e21[prev]==null || e9[last]==null || e21[last]==null) return {signal:'HOLD', reason:'EMA غير متوفرة'};
+
+    const crossUp = e9[prev] <= e21[prev] && e9[last] > e21[last];
+    const crossDown = e9[prev] >= e21[prev] && e9[last] < e21[last];
+
+    const rsiVal = indicators.rsiVal ?? 50;
+    const macd = indicators.macdVal;
+
+    // قواعد بسيطة للفلترة
+    if (crossUp && rsiVal > 35 && rsiVal < 85 && macd && macd.macd > macd.signal) {
+      return {signal:'BUY', reason:`EMA cross up • RSI=${rsiVal.toFixed(1)} • MACD ok`};
+    }
+    if (crossDown && rsiVal < 65 && rsiVal > 15 && macd && macd.macd < macd.signal) {
+      return {signal:'SELL', reason:`EMA cross down • RSI=${rsiVal.toFixed(1)} • MACD ok`};
+    }
+    return {signal:'HOLD', reason:`لا توافق بين المؤشرات • RSI=${rsiVal? rsiVal.toFixed(1) : 'n/a'}`};
+  }
+
+  // ========= حلقات التشغيل =========
+  let intervalId = null;
+
+  async function startMonitoring() {
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    const pair = document.getElementById('pair').value;
+    // ensure series exists
+    let series = loadSeries();
+
+    // immediate fetch and then interval
+    async function tick() {
+      const res = await fetchPair(pair);
+      if (!res) return;
+      const point = { t: Date.now(), price: res.price };
+      series.push(point);
+      series = series.slice(-MAX_POINTS);
+      saveSeries(series);
+
+      // compute indicators
+      const ind = computeIndicators(series);
+      // draw chart
+      drawChart(series, { ema9: ind.ema9Arr.map(v=>v), ema21: ind.ema21Arr.map(v=>v) });
+
+      // decide signal
+      const out = decideSignal(series, ind);
+      const sEl = document.getElementById('signal');
+      sEl.className = 'signal ' + (out.signal==='BUY'?'buy': out.signal==='SELL'?'sell':'hold');
+      sEl.textContent = out.signal;
+      document.getElementById('lastPrice').textContent = res.price.toFixed(6);
+      document.getElementById('details').textContent = out.reason;
+    }
+
+    await tick();
+    intervalId = setInterval(tick, POLL_INTERVAL_MS);
+  }
+
+  function stopMonitoring() {
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+  }
+
+  document.getElementById('startBtn').addEventListener('click', startMonitoring);
+  document.getElementById('stopBtn').addEventListener('click', stopMonitoring);
+
+  // initial draw with existing series
+  drawChart(loadSeries(), {ema9:[], ema21:[]});
+  </script>
+</body>
+</html>
