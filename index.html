@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="ar">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SmartRisk — Multi-market Live (Forex • Crypto • Metals)</title>
-<meta name="description" content="Live prices (Forex, Crypto, Gold/Silver). Dual-language, currency conversion, recommendation score. Works on GitHub Pages."/>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SmartRisk.ai — Multi-market (Forex • Crypto • Metals)</title>
+<meta name="description" content="Live multi-market monitor. Dual language. Replace PAYPAL link placeholder to enable donations."/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   :root{--bg:#071022;--card:#0b1220;--muted:#98a0b3;--accent:#00a3ff}
-  body{font-family:system-ui,Arial;background:var(--bg);color:#e6eef8;margin:0;padding:12px}
+  body{font-family:system-ui,Arial,Segoe UI;background:var(--bg);color:#e6eef8;margin:0;padding:14px}
   .top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
   .brand{font-weight:700;font-size:18px}
   .card{background:var(--card);padding:12px;border-radius:10px;box-shadow:0 10px 28px rgba(2,6,23,0.6)}
   select,input,button{padding:8px;border-radius:8px;border:1px solid #243142;background:#071126;color:#e6eef8}
-  .grid{display:grid;grid-template-columns:320px 1fr;gap:12px}
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:12px}
   table{width:100%;border-collapse:collapse}
   th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
   .sig{padding:6px 8px;border-radius:8px;font-weight:700}
@@ -28,7 +28,6 @@
   #chart{height:260px}
   .lang-toggle{display:flex;gap:6px}
   .pay-area{display:flex;gap:8px;align-items:center}
-  a.paylink{background:#ffc107;color:#073642;padding:8px 12px;border-radius:8px;text-decoration:none;font-weight:700}
   .search{width:100%;padding:8px;border-radius:8px;border:1px solid #243142;background:#071126;color:#e6eef8}
   .notice{background:#061122;border-left:4px solid #0b7a3a;padding:8px;border-radius:6px;margin-top:8px;color:#bfe6c8}
   .tiny{font-size:11px;color:var(--muted)}
@@ -40,8 +39,8 @@
 <!-- TOP -->
 <div class="top">
   <div>
-    <div class="brand" id="title">SmartRisk — Live Markets</div>
-    <div class="small" id="subtitle">Forex • Crypto • Gold/Silver — Dual language</div>
+    <div class="brand" id="title">SmartRisk.ai — Live Markets</div>
+    <div class="small" id="subtitle">Forex • Crypto • Gold/Silver — ثنائي اللغة</div>
   </div>
 
   <div style="display:flex;gap:8px;align-items:center">
@@ -51,57 +50,54 @@
     </div>
 
     <div class="pay-area">
-      <!-- PayPal redirect (classic). Replace 'business' value with your email if desired -->
-      <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" id="paypalForm" style="margin:0">
-        <input type="hidden" name="cmd" value="_xclick">
-        <input type="hidden" name="business" value="mohamedgabershalan@gmail.com">
-        <input type="hidden" name="item_name" value="SmartRisk Support 0.10 USD">
-        <input type="hidden" name="amount" value="0.10">
-        <input type="hidden" name="currency_code" value="USD">
-        <button class="cta" type="submit" id="payBtn">Donate $0.10</button>
-      </form>
-      <a class="paylink" id="paypalMe" href="https://www.paypal.me/mohamedgabershalan/0.10" target="_blank" rel="noopener" style="display:none">PayPal.me</a>
+      <!-- ================= PAYPAL PLACEHOLDER =================
+           🔧 استبدل النص YOUR_PAYPAL_LINK_HERE برابط الدفع الخاص بك بعد رفع المشروع.
+           مثال: https://www.paypal.me/YourId/0.10
+           لا تضف بريدًا هنا — استخدم PayPal.me أو رابط صفحة دفع.
+      ======================================================= -->
+      <a id="donateBtn" class="cta" href="YOUR_PAYPAL_LINK_HERE" target="_blank" rel="noopener noreferrer">💖 ادعم بـ $0.10</a>
+      <!-- ======================================================= -->
     </div>
   </div>
 </div>
 
-<!-- Main -->
+<!-- Main grid -->
 <div class="grid">
-  <!-- left controls -->
+  <!-- LEFT: controls -->
   <div>
     <div class="card">
       <div style="display:flex;gap:8px;align-items:center">
-        <label class="tiny">Update sec: <input id="pollSec" type="number" value="8" style="width:70px"/></label>
-        <button id="start" style="margin-left:6px">Start</button>
-        <button id="stop" disabled>Stop</button>
+        <label class="tiny">Update sec:
+          <input id="pollSec" type="number" value="30" style="width:70px;margin-left:6px"/>
+        </label>
+        <button id="startBtn">Start</button>
+        <button id="stopBtn" disabled>Stop</button>
       </div>
 
-      <div style="margin-top:10px" class="muted tiny">Choose view currency / اختر عملة العرض</div>
+      <div style="margin-top:10px" class="muted tiny">عرض الأسعار بعملة / View in currency</div>
       <select id="viewCurrency" style="width:100%;margin-top:6px">
         <option>USD</option><option>EUR</option><option>EGP</option><option>GBP</option><option>JPY</option><option>AUD</option>
       </select>
 
-      <div style="margin-top:10px" class="muted tiny">Search asset / ابحث عن أصل</div>
-      <input id="searchBox" class="search" placeholder="btc, eur/usd, xau ...">
+      <div style="margin-top:10px" class="muted tiny">بحث أو إضافة أصل (مثال: btc أو EUR/USD)</div>
+      <input id="searchBox" class="search" placeholder="eg: bitcoin, btc, eur/usd, xau/usd ...">
 
-      <div style="margin-top:10px" class="muted tiny">Choose assets / اختر أصول</div>
+      <div style="margin-top:10px" class="muted tiny">اختيارات سريعة</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
-        <!-- Some quick toggles -->
-        <label><input type="checkbox" class="asset" value="EUR/USD" checked> EUR/USD</label>
-        <label><input type="checkbox" class="asset" value="GBP/USD" checked> GBP/USD</label>
-        <label><input type="checkbox" class="asset" value="USD/JPY" checked> USD/JPY</label>
-        <label><input type="checkbox" class="asset" value="XAU/USD" checked> Gold (XAU)</label>
-        <label><input type="checkbox" class="asset" value="bitcoin" checked> BTC</label>
-        <label><input type="checkbox" class="asset" value="ethereum" checked> ETH</label>
-        <label><input type="checkbox" class="asset" value="binancecoin"> BNB</label>
-        <label><input type="checkbox" class="asset" value="ripple"> XRP</label>
-        <label><input type="checkbox" class="asset" value="dogecoin"> DOGE</label>
-        <!-- More can be added dynamically -->
+        <label><input type="checkbox" class="assetChk" value="EUR/USD" checked> EUR/USD</label>
+        <label><input type="checkbox" class="assetChk" value="GBP/USD" checked> GBP/USD</label>
+        <label><input type="checkbox" class="assetChk" value="USD/JPY" checked> USD/JPY</label>
+        <label><input type="checkbox" class="assetChk" value="XAU/USD" checked> Gold XAU</label>
+        <label><input type="checkbox" class="assetChk" value="XAG/USD"> Silver XAG</label>
+        <label><input type="checkbox" class="assetChk" value="bitcoin" checked> BTC</label>
+        <label><input type="checkbox" class="assetChk" value="ethereum" checked> ETH</label>
+        <label><input type="checkbox" class="assetChk" value="tether"> USDT</label>
+        <label><input type="checkbox" class="assetChk" value="cardano"> ADA</label>
       </div>
 
-      <div style="margin-top:10px" class="notice" id="note">Note: Data sources: CoinGecko (crypto) & exchangerate.host (fx & metals). Accurate and public APIs — reliable but not guaranteed.</div>
+      <div style="margin-top:10px" class="notice">مصادر البيانات: CoinGecko (عملات رقمية) • exchangerate.host (فوركس/معادن). سيتم تطبيق تفريق محلي بين عملات Fiat و Crypto.</div>
 
-      <div style="margin-top:10px" class="muted tiny">Capital / رأس المال (اختياري)</div>
+      <div style="margin-top:10px" class="muted tiny">رأس المال (اختياري)</div>
       <input id="capital" type="number" value="1000" style="width:100%;margin-top:6px"/>
 
       <div style="margin-top:10px;display:flex;gap:6px">
@@ -111,26 +107,26 @@
     </div>
 
     <div style="margin-top:10px" class="card">
-      <div class="muted tiny">Top tracked assets</div>
-      <div id="trackedList" style="max-height:300px;overflow:auto;margin-top:8px"></div>
+      <div class="muted tiny">قائمة المتابعة</div>
+      <div id="trackedList" style="max-height:320px;overflow:auto;margin-top:8px"></div>
     </div>
   </div>
 
-  <!-- right main area -->
+  <!-- RIGHT: chart + table -->
   <div>
     <div class="card" style="margin-bottom:12px">
       <canvas id="chart"></canvas>
       <div style="display:flex;justify-content:space-between;margin-top:8px">
-        <div class="small muted">Last update: <span id="lastUpdated">—</span></div>
-        <div class="small muted">Connection: <span id="connStatus">idle</span></div>
+        <div class="small muted">آخر تحديث: <span id="lastUpdate">—</span></div>
+        <div class="small muted">الحالة: <span id="status">idle</span></div>
       </div>
     </div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <div class="muted tiny">Recommendations (score 0–100)</div>
+        <div class="muted tiny">التوصيات (Score 0–100)</div>
         <div>
-          <label class="tiny">Show: <select id="filterRec"><option>All</option><option>Strong Buy</option><option>Buy</option><option>Hold</option><option>Sell</option><option>Strong Sell</option></select></label>
+          <label class="tiny">Filter: <select id="filterRec"><option>All</option><option>STRONG BUY</option><option>BUY</option><option>HOLD</option><option>SELL</option><option>STRONG SELL</option></select></label>
         </div>
       </div>
 
@@ -145,36 +141,20 @@
 </div>
 
 <script>
-/* ================== Config & Lists ================== */
-// Many crypto ids (CoinGecko). You can extend this list.
-const CRYPTO_IDS = [
-  "bitcoin","ethereum","binancecoin","ripple","cardano","solana","dogecoin","polkadot","litecoin",
-  "tron","avalanche-2","chainlink","bitcoin-cash","stellar","monero","uniswap","theta-token","filecoin",
-  "vechain","algorand","axie-infinity","internet-computer","aave","shiba-inu","dai","maker","eos","zcash",
-  "near","klay-token","hedera-hashgraph","neo","wmatic","arbitrum","optimism","osmosis","gala","sui"
-];
-
-// Helper: detect pair vs crypto
-function isFx(asset){ return asset.includes('/'); }
-function isCrypto(asset){ return !isFx(asset); }
-
-// API endpoints
-const COINGECKO_SIMPLE = 'https://api.coingecko.com/api/v3/simple/price';
-const COINGECKO_MULTI = 'https://api.coingecko.com/api/v3/coins/markets';
-const EXCHANGERATE = 'https://api.exchangerate.host/latest';
-
-// State
-let pollSeconds = 8;
-let pollId = null;
-const seriesStoragePrefix = 'sr_multimkt_v1_';
+/* ================== Configuration ================== */
+const COINGECKO_MARKETS = 'https://api.coingecko.com/api/v3/coins/markets';
+const EXCHANGERATE_HOST = 'https://api.exchangerate.host/latest';
+const DEFAULT_POLL_SEC = 30; // default update every 30s (can change from UI)
 const MAX_POINTS = 600;
+const STORAGE_PREFIX = 'sr_v3_';
+const ISO4217_FIAT = ["USD","EUR","GBP","JPY","CHF","AUD","CAD","NZD","SEK","NOK","DKK","ZAR","EGP","SAR","AED","KWD","OMR","BHD","INR","CNY","RUB","TRY","BRL","MXN","IDR"]; // short sample list
 
-/* ================== Utility: storage per asset ================== */
-function storageKey(asset){ return seriesStoragePrefix + asset.replace('/','_'); }
-function loadSeries(asset){ try{ return JSON.parse(localStorage.getItem(storageKey(asset))||'[]'); }catch(e){return[];} }
+/* ================== Utilities & Storage ================== */
+function storageKey(asset){ return STORAGE_PREFIX + asset.replace('/','_'); }
+function loadSeries(asset){ try{ return JSON.parse(localStorage.getItem(storageKey(asset))||'[]'); }catch(e){return []; } }
 function saveSeries(asset, series){ localStorage.setItem(storageKey(asset), JSON.stringify(series.slice(-MAX_POINTS))); }
 
-/* ================== Indicators (EMA/RSI) ================== */
+/* ================== Indicators ================== */
 function ema(arr, period){
   if(!arr.length) return null;
   const k = 2/(period+1);
@@ -182,265 +162,262 @@ function ema(arr, period){
   for(let i=1;i<arr.length;i++) prev = arr[i]*k + prev*(1-k);
   return prev;
 }
-function rsi(arr, period=14){
-  if(arr.length<=period) return null;
+function rsi(vals, period=14){
+  if(vals.length<=period) return null;
   let gains=0, losses=0;
-  for(let i=arr.length-period;i<arr.length;i++){
-    const d = arr[i] - arr[i-1];
+  for(let i=vals.length-period;i<vals.length;i++){
+    const d = vals[i]-vals[i-1];
     if(d>0) gains+=d; else losses+=Math.abs(d);
   }
   if(losses===0) return 100;
   const rs = (gains/period)/(losses/period);
   return 100 - (100/(1+rs));
 }
-function stddev(arr){ if(!arr.length) return 0; const m=arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((s,x)=>s+Math.pow(x-m,2),0)/arr.length); }
+function stddev(arr){ if(!arr.length) return 0; const m = arr.reduce((a,b)=>a+b,0)/arr.length; return Math.sqrt(arr.reduce((s,x)=>s+Math.pow(x-m,2),0)/arr.length); }
 
-/* ================== Fetch helpers ================== */
-// fetch fx/metals price 1 base = X quote
+/* ================== Helpers: detect type ================== */
+function isFx(asset){ return asset.includes('/'); }
+function isFiatCode(code){ return ISO4217_FIAT.includes(code.toUpperCase()); }
+function classify(asset){
+  // asset examples: "EUR/USD", "bitcoin", "XAU/USD"
+  if(isFx(asset)) {
+    const base = asset.split('/')[0].toUpperCase();
+    // if base is fiat code => FX/fiat; if base is XAU/XAG treat as metals
+    if(base === 'XAU' || base === 'XAG') return 'METAL';
+    if(isFiatCode(base)) return 'FIAT_PAIR';
+    return 'UNKNOWN_PAIR';
+  } else {
+    return 'CRYPTO';
+  }
+}
+
+/* ================== Fetchers ================== */
+// Fetch fx/metal price from exchangerate.host
 async function fetchFxPrice(base, quote){
   try{
-    const url = `${EXCHANGERATE}?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('fx err '+res.status);
-    const j = await res.json();
+    const url = `${EXCHANGERATE_HOST}?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('fx http ' + r.status);
+    const j = await r.json();
     return j.rates && j.rates[quote] ? Number(j.rates[quote]) : null;
-  }catch(e){ console.warn('fx fail',e); return null; }
+  } catch(e){ console.warn('fx fail', e); return null; }
 }
 
-// fetch cryptos simple (ids array) in vs_currency
+// Fetch cryptos markets (CoinGecko) - accepts array of ids and vs_currency
 async function fetchCryptos(ids, vs='usd'){
   try{
-    const url = `${COINGECKO_MULTI}?vs_currency=${encodeURIComponent(vs)}&ids=${encodeURIComponent(ids.join(','))}&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=24h`;
-    const res = await fetch(url);
-    if(!res.ok) throw new Error('cg err '+res.status);
-    const j = await res.json();
-    return j; // array of coin objects
-  }catch(e){ console.warn('cg fail',e); return null; }
+    const url = `${COINGECKO_MARKETS}?vs_currency=${encodeURIComponent(vs)}&ids=${encodeURIComponent(ids.join(','))}&order=market_cap_desc&per_page=250&page=1&sparkline=false&price_change_percentage=24h`;
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('cg http ' + r.status);
+    return await r.json();
+  } catch(e){ console.warn('cg fail', e); return null; }
 }
 
-/* ================== Recommendation logic ================== */
-function computeRecFromSeries(series){
+/* ================== Recommendation engine ================== */
+function computeRecommendation(series){
   const prices = series.map(s=>s.price);
   if(prices.length < 30) return {score:null, rec:'HOLD', why:'not enough data'};
   const ema9 = ema(prices,9), ema21 = ema(prices,21);
   const r = rsi(prices,14);
   const vol = stddev(prices.slice(-30));
-  const mom = prices[prices.length-1] - prices[Math.max(0,prices.length-5)];
+  const momentum = prices[prices.length-1] - prices[Math.max(0,prices.length-5)];
   const macdSign = Math.sign((ema(prices,12)||0) - (ema(prices,26)||0));
-  // parts -1..1
   const pEma = ema9 && ema21 ? Math.sign(ema9 - ema21) : 0;
   let pRsi = 0;
-  if(r!=null){
-    if(r>70) pRsi = 0.8;
-    else if(r>60) pRsi = 0.4;
-    else if(r>40) pRsi = 0;
-    else if(r>30) pRsi = -0.4;
-    else pRsi = -0.8;
-  }
+  if(r!=null){ if(r>70) pRsi=0.8; else if(r>60) pRsi=0.4; else if(r>40) pRsi=0; else if(r>30) pRsi=-0.4; else pRsi=-0.8; }
   const pMacd = macdSign;
   const pVol = Math.max(-1, Math.min(1, 1 - (vol / (Math.max(...prices)-Math.min(...prices)||1))));
-  const pMom = Math.max(-1, Math.min(1, mom / (Math.abs(prices[prices.length-1])||1) * 50));
+  const pMom = Math.max(-1, Math.min(1, momentum / (Math.abs(prices[prices.length-1])||1) * 50));
   const w = {ema:30, rsi:25, macd:20, vol:15, mom:10};
-  const tot = Object.values(w).reduce((a,b)=>a+b,0);
-  const vEma = (pEma+1)/2, vRsi = (pRsi+1)/2, vMacd=(pMacd+1)/2, vVol=(pVol+1)/2, vMom=(pMom+1)/2;
+  const tot = w.ema + w.rsi + w.macd + w.vol + w.mom;
+  const vEma = (pEma+1)/2, vRsi=(pRsi+1)/2, vMacd=(pMacd+1)/2, vVol=(pVol+1)/2, vMom=(pMom+1)/2;
   const raw = w.ema*vEma + w.rsi*vRsi + w.macd*vMacd + w.vol*vVol + w.mom*vMom;
-  const score = Math.round((raw/tot)*100);
+  const score = Math.round((raw / tot) * 100);
   let rec = 'HOLD';
-  if(score>=80) rec='STRONG BUY'; else if(score>=60) rec='BUY';
-  else if(score<=20) rec='STRONG SELL'; else if(score<=40) rec='SELL';
+  if(score >= 80) rec = 'STRONG BUY';
+  else if(score >= 60) rec = 'BUY';
+  else if(score <= 20) rec = 'STRONG SELL';
+  else if(score <= 40) rec = 'SELL';
   const why = `EMA9:${ema9?ema9.toFixed(6):'n/a'} EMA21:${ema21?ema21.toFixed(6):'n/a'} RSI:${r?r.toFixed(1):'n/a'}`;
-  return {score, rec, why, metrics:{ema9,ema21,r}};
+  return {score, rec, why, metrics:{ema9,ema21,r,vol,momentum}};
 }
 
-/* ================== UI functions ================== */
+/* ================== UI helpers ================== */
 const tableBody = document.querySelector('#table tbody');
 const trackedList = document.getElementById('trackedList');
-const lastUpdated = document.getElementById('lastUpdated');
-const connStatus = document.getElementById('connStatus');
+const lastUpdateEl = document.getElementById('lastUpdate');
+const statusEl = document.getElementById('status');
 const chartCtx = document.getElementById('chart').getContext('2d');
-let chart = new Chart(chartCtx, {type:'line',data:{labels:[],datasets:[{label:'',data:[],borderColor:'#6ee7b7',borderWidth:2,tension:0.25,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false}}}});
+let chart = new Chart(chartCtx, {type:'line', data:{labels:[], datasets:[{label:'', data:[], borderColor:'#6ee7b7', borderWidth:2, tension:0.25, pointRadius:0}]}, options:{responsive:true, maintainAspectRatio:false, scales:{x:{display:false}}}});
 
-function renderTable(rows, viewCurrency){
+/* ================== Main gather/update function ================== */
+async function gather(){
+  statusEl.textContent = 'fetching...';
+  const viewCur = document.getElementById('viewCurrency').value || 'USD';
+  // collect selected assets
+  const selected = Array.from(document.querySelectorAll('.assetChk:checked')).map(i=>i.value);
+  const q = document.getElementById('searchBox').value.trim();
+  if(q) selected.unshift(q);
+
+  // split cryptos and fx
+  const cryptos = selected.filter(a => !isFx(a));
+  const fxs = selected.filter(a => isFx(a));
+
+  // fetch cryptos from CoinGecko in viewCur
+  let cgData = [];
+  if(cryptos.length){
+    // sanitize ids to lower-case and remove duplicates
+    const ids = [...new Set(cryptos.map(s=>s.toLowerCase()))];
+    const res = await fetchCryptos(ids, viewCur.toLowerCase());
+    if(res) cgData = res;
+  }
+
+  // fetch fx pairs individually
+  const fxPrices = {};
+  for(const p of fxs){
+    const [b,q2] = p.split('/');
+    const price = await fetchFxPrice(b, q2);
+    if(price!=null) fxPrices[p] = price;
+  }
+
+  const rows = [];
+  // process cryptos
+  for(const id of cryptos){
+    const coin = cgData.find(c => c.id === id || c.symbol === id.toLowerCase());
+    if(!coin){
+      rows.push({asset:id, type:'crypto', priceDisplay:'—', change24h:undefined, score:null, rec:'HOLD', why:'no data'});
+      continue;
+    }
+    const price = coin.current_price;
+    const change24 = coin.price_change_percentage_24h;
+    const s = loadSeries(id);
+    s.push({t:Date.now(), price});
+    saveSeries(id, s);
+    const rec = computeRecommendation(s);
+    rows.push({asset:coin.name + ' ('+coin.symbol.toUpperCase()+')', type:'crypto', priceDisplay: `${price} ${viewCur}`, price, change24h:change24, score:rec.score, rec:rec.rec, why:rec.why});
+  }
+
+  // process fx/metals
+  for(const p of fxs){
+    const price = fxPrices[p] ?? null;
+    if(price===null){
+      rows.push({asset:p, type:'fx', priceDisplay:'—', score:null, rec:'HOLD', why:'no data'});
+      continue;
+    }
+    const s = loadSeries(p);
+    s.push({t:Date.now(), price});
+    saveSeries(p, s);
+    const rec = computeRecommendation(s);
+    rows.push({asset:p, type:'fx', priceDisplay:`${price} ${viewCur}`, price, change24h:undefined, score:rec.score, rec:rec.rec, why:rec.why});
+  }
+
+  // render UI
+  renderTable(rows);
+  renderTracked(rows);
+  lastUpdateEl.textContent = new Date().toLocaleTimeString();
+  statusEl.textContent = 'ok';
+
+  // update chart with first available series
+  const first = rows.find(r => r.price !== undefined && r.price !== null);
+  if(first){
+    const key = first.asset.includes('(') ? first.asset.split(' (')[1].toLowerCase() : first.asset;
+    const s = loadSeries(key) || loadSeries(first.asset);
+    if(s && s.length){
+      chart.data.labels = s.map(pt => new Date(pt.t).toLocaleTimeString());
+      chart.data.datasets[0].label = first.asset;
+      chart.data.datasets[0].data = s.map(pt => pt.price);
+      chart.update();
+    }
+  }
+}
+
+/* ================== Render helpers ================== */
+function renderTable(rows){
   const filter = document.getElementById('filterRec').value;
-  let out = '';
-  rows.forEach(r=>{
-    if(filter!=='All' && r.rec !== filter) return;
-    out += `<tr>
+  let html = '';
+  rows.forEach(r => {
+    if(filter !== 'All' && r.rec !== filter) return;
+    html += `<tr>
       <td>${r.asset}</td>
       <td>${r.priceDisplay}</td>
-      <td class="tiny">${r.change24h!==undefined ? (r.change24h>=0? '+' : '') + r.change24h.toFixed(2)+'%':'—'}</td>
-      <td>${r.score===null? '—': r.score}</td>
+      <td class="tiny">${r.change24h !== undefined ? (r.change24h>=0? '+':'') + r.change24h.toFixed(2)+'%':'—'}</td>
+      <td>${r.score===null? '—' : r.score}</td>
       <td><span class="sig ${r.rec.includes('STRONG')? 'sb': r.rec==='BUY'? 'b' : r.rec==='SELL'? 's' : 'h'}">${r.rec}</span></td>
       <td class="small muted">${r.why}</td>
     </tr>`;
   });
-  tableBody.innerHTML = out;
+  tableBody.innerHTML = html;
 }
 
 function renderTracked(rows){
   trackedList.innerHTML = rows.map(r=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)"><div><strong>${r.asset}</strong><div class="small muted">${r.type}</div></div><div style="text-align:right">${r.priceDisplay}<div class="tiny">${r.rec}</div></div></div>`).join('');
 }
 
-/* ================== Main gather function ================== */
-async function gather(){
-  connStatus.textContent = 'fetching';
-  const viewCur = document.getElementById('viewCurrency').value || 'USD';
-  // compile selected assets
-  const checked = Array.from(document.querySelectorAll('.asset:checked')).map(i=>i.value);
-  // also allow searching single asset name
-  const q = document.getElementById('searchBox').value.trim();
-  if(q) checked.unshift(q);
-
-  // split lists
-  const cryptos = checked.filter(isCrypto);
-  const fxs = checked.filter(isFx);
-
-  // fetch cryptos from CoinGecko (vs viewCur)
-  let cg = [];
-  if(cryptos.length){
-    // limit to 50 per request; chunk if needed (but our list small)
-    const uniq = [...new Set(cryptos)];
-    const res = await fetchCryptos(uniq, viewCur.toLowerCase());
-    if(res) cg = res; else cg = [];
-  }
-
-  // fetch fx pairs
-  const fxResults = {};
-  for(const p of fxs){
-    const [b,q] = p.split('/');
-    let price = await fetchFxPrice(b,q);
-    // if user wants view currency not USD, we still show pair as is; conversion handled separately by display
-    if(price!=null) fxResults[p] = price;
-  }
-
-  const rows = [];
-  // build rows for cryptos
-  for(const id of cryptos){
-    const coin = cg.find(c=>c.id === id || c.symbol === id);
-    if(!coin){
-      rows.push({asset:id,type:'crypto',priceDisplay:'—',change24h:undefined,score:null,rec:'HOLD',why:'no data'});
-      continue;
-    }
-    const price = coin.current_price;
-    const change = coin.price_change_percentage_24h;
-    // save series
-    const s = loadSeries(id);
-    s.push({t:Date.now(), price});
-    saveSeries(id,s);
-    const rec = computeRecFromSeries(s);
-    rows.push({asset:coin.name + ' ('+coin.symbol.toUpperCase()+')', type:'crypto', priceDisplay: `${price} ${viewCur}`, price, change24h:change, score:rec.score, rec:rec.rec, why:rec.why});
-  }
-
-  // build rows for fx
-  for(const p of fxs){
-    const price = fxResults[p] ?? null;
-    if(price===null){
-      rows.push({asset:p,type:'fx',priceDisplay:'—',score:null,rec:'HOLD',why:'no data'});
-      continue;
-    }
-    const s = loadSeries(p);
-    s.push({t:Date.now(), price});
-    saveSeries(p,s);
-    const rec = computeRecFromSeries(s);
-    rows.push({asset:p,type:'fx',priceDisplay: `${price} ${viewCur}`, price, change24h:undefined, score:rec.score, rec:rec.rec, why:rec.why});
-  }
-
-  // render UI
-  renderTable(rows, viewCur);
-  renderTracked(rows);
-  lastUpdated.textContent = new Date().toLocaleTimeString();
-  connStatus.textContent = 'ok';
-
-  // update chart: show first asset with data
-  const first = rows.find(r=>r.price!==undefined && r.price!==null);
-  if(first){
-    const s = loadSeries(first.asset.includes('(')? first.asset.split(' (')[1].toLowerCase() : first.asset);
-    const labels = s.map(pt=>new Date(pt.t).toLocaleTimeString());
-    const data = s.map(pt=>pt.price);
-    chart.data.labels = labels;
-    chart.data.datasets[0].label = first.asset;
-    chart.data.datasets[0].data = data;
-    chart.update();
-  }
-}
-
 /* ================== Controls ================== */
-document.getElementById('start').addEventListener('click', ()=>{
-  const sec = Number(document.getElementById('pollSec').value) || 8;
-  pollSeconds = Math.max(3, sec);
-  if(pollId) clearInterval(pollId);
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  const sec = Number(document.getElementById('pollSec').value) || DEFAULT_POLL_SEC;
+  const poll = Math.max(5, sec);
+  if(window.pollIntervalId) clearInterval(window.pollIntervalId);
   gather();
-  pollId = setInterval(gather, pollSeconds*1000);
-  document.getElementById('start').disabled = true;
-  document.getElementById('stop').disabled = false;
+  window.pollIntervalId = setInterval(gather, poll*1000);
+  document.getElementById('startBtn').disabled = true;
+  document.getElementById('stopBtn').disabled = false;
 });
-document.getElementById('stop').addEventListener('click', ()=>{
-  if(pollId) clearInterval(pollId);
-  pollId = null;
-  document.getElementById('start').disabled = false;
-  document.getElementById('stop').disabled = true;
+document.getElementById('stopBtn').addEventListener('click', ()=>{
+  if(window.pollIntervalId) clearInterval(window.pollIntervalId);
+  window.pollIntervalId = null;
+  document.getElementById('startBtn').disabled = false;
+  document.getElementById('stopBtn').disabled = true;
 });
+
 document.getElementById('filterRec').addEventListener('change', gather);
 document.getElementById('downloadCSV').addEventListener('click', ()=>{
-  const checked = Array.from(document.querySelectorAll('.asset:checked')).map(i=>i.value);
+  const checked = Array.from(document.querySelectorAll('.assetChk:checked')).map(i=>i.value);
   let csv = 'asset,timestamp,price\n';
   checked.forEach(a=>{
     const s = loadSeries(a);
-    s.forEach(pt=> csv += `${a},${new Date(pt.t).toISOString()},${pt.price}\n`);
+    s.forEach(pt => csv += `${a},${new Date(pt.t).toISOString()},${pt.price}\n`);
   });
   const blob = new Blob([csv], {type:'text/csv'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='smartrisk_data.csv'; a.click(); URL.revokeObjectURL(url);
+  const a = document.createElement('a'); a.href = url; a.download = 'smartrisk_data.csv'; a.click(); URL.revokeObjectURL(url);
 });
-document.getElementById('clearLocal').addEventListener('click', ()=>{ if(confirm('Clear local stored series?')){ Object.keys(localStorage).filter(k=>k.startsWith(seriesStoragePrefix)).forEach(k=>localStorage.removeItem(k)); alert('Cleared'); }});
+document.getElementById('clearLocal').addEventListener('click', ()=>{ if(confirm('Clear local series?')){ Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX)).forEach(k=>localStorage.removeItem(k)); alert('Cleared'); }});
 
 /* language toggle */
 const i18n = {
-  ar: {
-    title:'SmartRisk — أسواق حية',
-    subtitle:'فوركس • كريبتو • ذهب/فضة — عربي/English',
-    pay:'ادعم بـ0.10$'
-  },
-  en: {
-    title:'SmartRisk — Live Markets',
-    subtitle:'Forex • Crypto • Gold/Silver — Arabic/English',
-    pay:'Donate $0.10'
-  }
+  ar: { title:'SmartRisk.ai — أسواق حية', subtitle:'فوركس • كريبتو • ذهب/فضة — ثنائي اللغة', donate:'💖 ادعم بـ $0.10' },
+  en: { title:'SmartRisk.ai — Live Markets', subtitle:'Forex • Crypto • Gold/Silver — Arabic/English', donate:'Donate $0.10' }
 };
 function setLang(lang){
-  if(lang==='ar'){ document.getElementById('title').textContent = i18n.ar.title; document.getElementById('subtitle').textContent = i18n.ar.subtitle; document.getElementById('payBtn').textContent = i18n.ar.pay; }
-  else { document.getElementById('title').textContent = i18n.en.title; document.getElementById('subtitle').textContent = i18n.en.subtitle; document.getElementById('payBtn').textContent = i18n.en.pay; }
+  if(lang==='ar'){ document.getElementById('title').textContent = i18n.ar.title; document.getElementById('subtitle').textContent = i18n.ar.subtitle; document.getElementById('donateBtn').textContent = i18n.ar.donate; }
+  else { document.getElementById('title').textContent = i18n.en.title; document.getElementById('subtitle').textContent = i18n.en.subtitle; document.getElementById('donateBtn').textContent = i18n.en.donate; }
 }
 document.getElementById('btnAr').addEventListener('click', ()=>setLang('ar'));
 document.getElementById('btnEn').addEventListener('click', ()=>setLang('en'));
 setLang('ar');
 
-/* search quick-add */
+/* search add */
 document.getElementById('searchBox').addEventListener('keydown', (e)=>{
-  if(e.key==='Enter'){ e.preventDefault(); const v = e.target.value.trim(); if(!v) return; // try add
-    // if looks like fx pair a/b
+  if(e.key === 'Enter'){ e.preventDefault(); const v = e.target.value.trim(); if(!v) return;
     const normalized = v.includes('/') ? v.toUpperCase() : v.toLowerCase();
-    // add checkbox dynamically
-    const container = document.querySelector('.asset').parentNode;
-    const already = Array.from(document.querySelectorAll('.asset')).map(x=>x.value);
-    if(!already.includes(normalized)){
-      const lbl = document.createElement('label'); lbl.innerHTML = `<input type="checkbox" class="asset" value="${normalized}" checked> ${normalized}`;
+    // add a new checkbox if not exists
+    const container = document.querySelector('.assetChk').parentNode;
+    const existing = Array.from(document.querySelectorAll('.assetChk')).map(x=>x.value);
+    if(!existing.includes(normalized)){
+      const lbl = document.createElement('label'); lbl.innerHTML = `<input type="checkbox" class="assetChk" value="${normalized}" checked> ${normalized}`;
       container.appendChild(lbl);
     }
     e.target.value = '';
   }
 });
 
-/* initial tracked default fill */
-function initTracked(){
-  const defaultChecked = Array.from(document.querySelectorAll('.asset:checked')).map(x=>x.value);
-  renderTracked(defaultChecked.map(a=>({asset:a,type:isFx(a)?'FX/Metal':'Crypto',priceDisplay:'—',rec:'—'})));
-}
-initTracked();
+/* init tracked with default boxes */
+(function initTracked(){
+  const defaults = Array.from(document.querySelectorAll('.assetChk:checked')).map(x=>x.value);
+  renderTracked(defaults.map(a=>({asset:a,type:isFx(a)?'FX/Metal':'Crypto',priceDisplay:'—',rec:'—'})));
+})();
 
-/* auto-start small fetch of crypto list (to avoid CORS issues) */
-/* Start note: ready to use on GitHub Pages. */
 </script>
-
 </body>
 </html>
