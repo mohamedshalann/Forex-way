@@ -1,234 +1,394 @@
 <!doctype html>
 <html lang="ar">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SmartRisk.AI — Forex (Live + PayPal)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SmartRisk Pro — Forex, Crypto, Gold/Silver (Live)</title>
+<meta name="description" content="Live multi-market monitor + probabilistic recommendations (Forex, Crypto, Metals). Pay 0.10$ to support." />
+<!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  body{font-family:system-ui,Arial;background:#071020;color:#e6eef8;margin:0;padding:16px}
-  .card{background:#0b1220;padding:12px;border-radius:10px;margin-bottom:12px;box-shadow:0 8px 24px rgba(2,6,23,0.6)}
-  header{display:flex;align-items:center;justify-content:space-between;gap:10px}
-  select,input,button{padding:8px;border-radius:8px;border:1px solid #243142;background:#071126;color:#e6eef8}
-  #chartWrapper{height:300px}
-  .signal{font-weight:700;padding:6px 10px;border-radius:8px;display:inline-block}
-  .buy{background:#063b13;color:#a7f3d0;border:1px solid #0b7a3a}
-  .sell{background:#4b0505;color:#ffd7d7;border:1px solid #7a1212}
-  .hold{background:#2b2f3a;color:#cbd5e1;border:1px solid #3b4250}
-  .muted{color:#98a0b3;font-size:13px}
-  .cta{display:inline-block;background:linear-gradient(90deg,#0070ba,#005ea6);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700}
-  .paynote{font-size:13px;color:#cfe6ff;margin-top:8px}
-  .center{display:flex;gap:8px;align-items:center}
-  .status{font-size:13px;color:#9fb0d6;margin-left:8px}
+  :root{--bg:#071022;--card:#0b1220;--muted:#98a0b3;--accent:#00a3ff}
+  body{font-family:system-ui,Arial;background:var(--bg);color:#e6eef8;margin:0;padding:14px}
+  .top{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .brand{font-weight:700;font-size:20px}
+  .card{background:var(--card);padding:12px;border-radius:12px;box-shadow:0 8px 24px rgba(2,6,23,0.6)}
+  select,input,button{padding:8px;border-radius:8px;border:1px solid #233244;background:#071126;color:#e6eef8}
+  .grid{display:grid;grid-template-columns:320px 1fr;gap:12px}
+  .list{max-height:480px;overflow:auto}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03);font-size:13px}
+  .signal-pill{padding:6px 8px;border-radius:8px;font-weight:700}
+  .sb{background:#063b13;color:#a7f3d0;border:1px solid #0b7a3a}
+  .b{background:#064e2a;color:#bff7d8}
+  .h{background:#2b2f3a;color:#cbd5e1}
+  .s{background:#7a1212;color:#ffd7d7}
+  .ss{background:#4b0505;color:#ffd7d7}
+  .cta{background:linear-gradient(90deg,#0070ba,#005ea6);color:white;padding:12px 16px;border-radius:10px;text-decoration:none;font-weight:700;display:inline-block}
+  .muted{color:var(--muted);font-size:13px}
+  #chart{height:260px}
+  .small{font-size:12px;color:var(--muted)}
+  .notice{background:#061122;border-left:4px solid #0b7a3a;padding:8px;border-radius:6px;margin-top:8px;color:#bfe6c8}
 </style>
 </head>
 <body>
-  <div class="card">
-    <header>
-      <div>
-        <h2 style="margin:0">SmartRisk.AI — Forex (Live)</h2>
-        <div class="muted">مصدر السعر: Frankfurter → fallback exchangerate.host</div>
-      </div>
-      <div class="center">
-        <label>زوج:
-          <select id="pair" style="margin-left:8px">
-            <option>EUR/USD</option>
-            <option>GBP/USD</option>
-            <option>USD/JPY</option>
-            <option>AUD/USD</option>
-            <option>USD/EGP</option>
-          </select>
-        </label>
-        <button id="startBtn">ابدأ</button>
-        <button id="stopBtn" disabled>أوقف</button>
-      </div>
-    </header>
+
+<div class="top">
+  <div>
+    <div class="brand">SmartRisk Pro — Monitor (Forex • Crypto • Metals)</div>
+    <div class="muted small">أسعار حية • توصيات احتمالية • دعم 0.10$ لتفعيل المزايا</div>
   </div>
 
-  <div class="card">
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-      <div>آخر سعر: <strong id="lastPrice">—</strong></div>
-      <div>إشارة: <span id="signal" class="signal hold">HOLD</span></div>
-      <div class="status" id="fetchStatus">جاهز</div>
-      <div style="margin-left:auto">
-        <span class="muted">احتمال نجاح: </span><strong id="prob">—</strong>%
+  <div style="display:flex;gap:8px;align-items:center">
+    <!-- PayPal quick CTA -->
+    <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" id="paypalQuick">
+      <input type="hidden" name="cmd" value="_xclick">
+      <input type="hidden" name="business" value="mohamedgabershalan@gmail.com">
+      <input type="hidden" name="item_name" value="SmartRisk Support - 0.10 USD">
+      <input type="hidden" name="amount" value="0.10">
+      <input type="hidden" name="currency_code" value="USD">
+      <button class="cta" type="submit">ادعم بـ0.10$</button>
+    </form>
+  </div>
+</div>
+
+<div class="grid">
+  <!-- LEFT: controls + portfolio list -->
+  <div class="card" style="height:100%">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">
+      <label>تحديث (ث.): <input id="pollInterval" type="number" value="8" style="width:70px"/></label>
+      <button id="startBtn">ابدأ</button>
+      <button id="stopBtn" disabled>أوقف</button>
+    </div>
+
+    <div style="margin-bottom:8px">
+      <div class="small">اختر الأسـواق المراد مراقبتها:</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        <label><input type="checkbox" class="assetChk" value="EUR/USD" checked /> EUR/USD</label>
+        <label><input type="checkbox" class="assetChk" value="GBP/USD" checked /> GBP/USD</label>
+        <label><input type="checkbox" class="assetChk" value="USD/JPY" checked /> USD/JPY</label>
+        <label><input type="checkbox" class="assetChk" value="USD/EGP" /> USD/EGP</label>
+        <label><input type="checkbox" class="assetChk" value="AUD/USD" /> AUD/USD</label>
+        <label><input type="checkbox" class="assetChk" value="XAU/USD" checked /> Gold (XAU)</label>
+        <label><input type="checkbox" class="assetChk" value="XAG/USD" /> Silver (XAG)</label>
+        <label><input type="checkbox" class="assetChk" value="bitcoin" checked /> BTC</label>
+        <label><input type="checkbox" class="assetChk" value="ethereum" checked /> ETH</label>
+        <label><input type="checkbox" class="assetChk" value="binancecoin" /> BNB</label>
+        <label><input type="checkbox" class="assetChk" value="solana" /> SOL</label>
+        <label><input type="checkbox" class="assetChk" value="cardano" /> ADA</label>
+        <label><input type="checkbox" class="assetChk" value="ripple" /> XRP</label>
+        <label><input type="checkbox" class="assetChk" value="dogecoin" /> DOGE</label>
       </div>
     </div>
 
-    <div id="chartWrapper"><canvas id="chart"></canvas></div>
+    <div style="margin-top:10px" class="muted small">رأس المال (اختياري لحجم الصفقة)</div>
+    <input id="capital" type="number" value="1000" style="width:100%;margin-top:6px"/>
 
-    <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
-      <!-- Primary CTA — Pay via PayPal redirect to your email -->
-      <form id="paypalForm" action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" style="margin:0">
-        <input type="hidden" name="cmd" value="_xclick">
-        <input type="hidden" name="business" value="mohamedgabershalan@gmail.com">
-        <input type="hidden" name="item_name" value="SmartRisk Pro - 0.10 USD">
-        <input type="hidden" name="amount" value="0.10">
-        <input type="hidden" name="currency_code" value="USD">
-        <!-- return to site after payment -->
-        <input type="hidden" name="return" value="" id="paypalReturn">
-        <input type="hidden" name="cancel_return" value="" id="paypalCancel">
-        <button id="payBtn" class="cta" type="submit">ادفع 0.10$ لتفعيل Pro الآن</button>
-      </form>
+    <div style="margin-top:10px" class="muted small">نسبة مخاطرة لكل صفقة</div>
+    <input id="riskPct" type="number" value="1" style="width:100%;margin-top:6px"/>
 
-      <!-- Quick alternative link (only one visible to avoid confusion) -->
-      <a id="paylink" class="cta" style="display:none" href="#" target="_blank" rel="noopener">ادفع الآن</a>
+    <div class="notice" id="notice">اضغط ابدأ لجلب البيانات الحية. يُنصح بتجربة على حساب ديمو قبل التداول الحقيقي.</div>
 
-      <div style="margin-left:auto">
-        <button id="iPaidBtn" style="padding:8px 10px;border-radius:8px;border:1px solid #2b3b4a;background:#0b1a28;color:#cfe6ff;cursor:pointer">لقد دفعت — حدثني</button>
-        <div class="paynote" id="payNote">الدفع يفتح في تبويب PayPal. بعد الدفع ستعود لتفعيل يدوي عبر "لقد دفعت" (أو اطلب تفعيل تلقائي لاحقًا).</div>
+    <div style="margin-top:12px">
+      <div class="small muted">قائمة الأصول الحالية (سريعة):</div>
+      <div class="list" id="assetsList"></div>
+    </div>
+
+    <div style="margin-top:10px;display:flex;gap:6px">
+      <button id="downloadCSV">تحميل CSV</button>
+      <button id="clearData">مسح البيانات المخزنة</button>
+    </div>
+  </div>
+
+  <!-- RIGHT: chart + table -->
+  <div>
+    <div class="card" style="margin-bottom:12px">
+      <canvas id="chart"></canvas>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div class="muted small">لوحة التوصيات (رتّب حسب الـScore)</div>
+        <div class="muted small">آخر تحديث: <span id="lastUpdate">—</span></div>
+      </div>
+      <div style="overflow:auto;max-height:400px">
+        <table id="recTable">
+          <thead>
+            <tr><th>الأصل</th><th>السعر</th><th>Score</th><th>توصية</th><th>السبب</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
   </div>
+</div>
 
 <script>
-/* ========== إعداد الرسم ========== */
-const ctx = document.getElementById('chart').getContext('2d');
-let chart = new Chart(ctx, {
-  type:'line',
-  data: { labels:[], datasets:[
-    { label:'السعر', data:[], borderColor:'#6ee7b7', borderWidth:2, tension:0.25, pointRadius:0 }
-  ]},
-  options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false}}}
-});
-
-/* ========== State ========== */
-const POLL_MS = 8000;
-const MAX_POINTS = 500;
-const STORAGE_KEY = 'forexpulse_series_v_final';
+/* ========================== Config & state ========================== */
+const POLL_DEFAULT = 8;
+let pollMs = POLL_DEFAULT * 1000;
 let intervalId = null;
+const STORAGE_PREFIX = 'srp_series_v2_';
+const MAX_POINTS = 600; // keep local points per asset
+const fiatBase = 'USD';
 
-/* ========== Helpers: fetch with fallback ========== */
-async function fetchFrankfurter(base, quote) {
-  try {
-    const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(base)}&to=${encodeURIComponent(quote)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Frankfurter HTTP ' + res.status);
-    const j = await res.json();
-    if (j.rates && j.rates[quote]) return j.rates[quote];
-    return null;
-  } catch (e) { console.warn('frankfurter fail', e); return null; }
-}
+/* Assets config: if value contains '/', it's forex/metal (use exchangerate.host),
+   else treat as crypto id for CoinGecko (vs USD). */
+const defaultAssets = [
+  'EUR/USD','GBP/USD','USD/JPY','USD/EGP','AUD/USD',
+  'XAU/USD','XAG/USD',
+  'bitcoin','ethereum','binancecoin','solana','cardano','ripple','dogecoin'
+];
 
-async function fetchExchangerate(base, quote) {
-  try {
-    const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('exchangerate HTTP ' + res.status);
-    const j = await res.json();
-    if (j.rates && j.rates[quote]) return j.rates[quote];
-    return null;
-  } catch (e) { console.warn('exchangerate fail', e); return null; }
-}
-
-async function fetchLatest(pair) {
-  const [base,quote] = pair.split('/');
-  // Try Frankfurter first
-  let price = await fetchFrankfurter(base, quote);
-  if (price != null) {
-    return {price};
-  }
-  // fallback
-  price = await fetchExchangerate(base, quote);
-  if (price != null) {
-    return {price};
-  }
-  // both failed
-  return null;
-}
-
-/* ========== Series storage ========== */
-function loadSeries(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){return []} }
-function saveSeries(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s.slice(-MAX_POINTS))); }
-
-/* ========== Simple indicators (for signal) ========== */
-function ema(arr, period) {
-  if (!arr.length) return null;
+/* ========================== Helpers: indicators ========================== */
+function ema(arr, period){
+  if(!arr.length) return null;
   const k = 2/(period+1);
   let prev = arr[0];
-  for (let i=1;i<arr.length;i++) prev = arr[i]*k + prev*(1-k);
+  for(let i=1;i<arr.length;i++) prev = arr[i]*k + prev*(1-k);
   return prev;
 }
-function decideSimple(series) {
-  const prices = series.map(p=>p.price);
-  if (prices.length < 30) return {signal:'HOLD', score:null, reason:'حاجة لبيانات أكثر'};
-  const e9 = ema(prices.slice(-50),9), e21 = ema(prices.slice(-50),21);
-  if (e9==null || e21==null) return {signal:'HOLD', score:null, reason:'EMA غير متوفرة'};
-  const score = Math.round(50 + ( (e9 - e21) / Math.max(0.0001, Math.abs(e21)) ) * 500); // heuristic
-  return { signal: score >= 55 ? 'BUY' : score <=45 ? 'SELL' : 'HOLD', score: Math.max(0, Math.min(100, score)), reason:`EMA9=${e9.toFixed(6)} EMA21=${e21.toFixed(6)}`};
+function rsi(values, period=14){
+  if(values.length<=period) return null;
+  let gains=0, losses=0;
+  for(let i=values.length-period;i<values.length;i++){
+    const d = values[i]-values[i-1];
+    if(d>0) gains+=d; else losses+=Math.abs(d);
+  }
+  if(losses===0) return 100;
+  const rs = (gains/period)/(losses/period);
+  return 100 - (100/(1+rs));
+}
+function stddev(arr){
+  if(!arr.length) return 0;
+  const mean = arr.reduce((a,b)=>a+b,0)/arr.length;
+  const v = arr.reduce((a,b)=>a+Math.pow(b-mean,2),0)/arr.length;
+  return Math.sqrt(v);
 }
 
-/* ========== Main tick ========== */
-async function tick(pair) {
-  document.getElementById('fetchStatus').textContent = 'جلب السعر...';
-  const res = await fetchLatest(pair);
-  if (!res) {
-    document.getElementById('fetchStatus').textContent = 'فشل جلب السعر — جاري إعادة المحاولة...';
-    return;
-  }
-  document.getElementById('fetchStatus').textContent = 'تم التحديث';
-  const series = loadSeries();
-  series.push({t:Date.now(), price: res.price});
-  saveSeries(series);
+/* ========================== Storage per asset ========================== */
+function keyFor(asset){ return STORAGE_PREFIX + asset.replace('/','_'); }
+function loadSeries(asset){ try{ return JSON.parse(localStorage.getItem(keyFor(asset))||'[]'); }catch(e){return []} }
+function saveSeries(asset, series){ localStorage.setItem(keyFor(asset), JSON.stringify(series.slice(-MAX_POINTS))); }
 
-  // update chart
-  chart.data.labels = series.map(s=> new Date(s.t).toLocaleTimeString());
-  chart.data.datasets[0].data = series.map(s=>s.price);
-  chart.update();
+/* ========================== Fetchers ========================== */
+// Try fetch price for forex/metal via exchangerate.host
+async function fetchFxPrice(base, quote){
+  try{
+    const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('fx http ' + res.status);
+    const j = await res.json();
+    if(j && j.rates && j.rates[quote]) return Number(j.rates[quote]);
+    return null;
+  } catch(e){ console.warn('fx fail',e); return null; }
+}
+
+// Fetch crypto prices via CoinGecko (ids array)
+async function fetchCryptoPrices(ids){
+  try{
+    const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids.join(','))}&vs_currencies=usd`;
+    const res = await fetch(url);
+    if(!res.ok) throw new Error('cg http ' + res.status);
+    const j = await res.json();
+    return j;
+  } catch(e){ console.warn('coinGecko fail', e); return null; }
+}
+
+/* ========================== Recommendation logic (composite) ========================== */
+function computeRecommendation(series){
+  // series: array of {t,price}
+  const prices = series.map(s=>s.price);
+  if(prices.length < 30) return {score:null, rec:'HOLD', reason:'حاجة لبيانات أكثر'};
+  const ema9 = ema(prices,9);
+  const ema21 = ema(prices,21);
+  const rsiVal = rsi(prices,14);
+  const vol = stddev(prices.slice(-30));
+  const momentum = prices[prices.length-1] - prices[Math.max(0,prices.length-5)];
+  // simple MACD-like: compare short & long EMAs
+  const macdSign = Math.sign((ema(prices,12)||0) - (ema(prices,26)||0));
+  // parts map to -1..1
+  let pEma = 0;
+  if(ema9 && ema21) pEma = Math.sign(ema9 - ema21);
+  let pRsi = 0;
+  if(rsiVal!==null){
+    if(rsiVal>70) pRsi = 0.8;
+    else if(rsiVal>60) pRsi = 0.4;
+    else if(rsiVal>40) pRsi = 0;
+    else if(rsiVal>30) pRsi = -0.4;
+    else pRsi = -0.8;
+  }
+  let pMacd = macdSign;
+  let pVol = 1 - (vol / (Math.max(...prices) - Math.min(...prices) || 1)); // higher means less vol => more confidence
+  pVol = Math.max(-1, Math.min(1, pVol));
+  let pMom = Math.max(-1, Math.min(1, momentum / (Math.abs(prices[prices.length-1])||1) * 50));
+
+  // weights (you can tune)
+  const w = {ema:30, rsi:25, macd:20, vol:15, mom:10};
+  const totalW = Object.values(w).reduce((a,b)=>a+b,0);
+  // map -1..1 -> 0..1
+  const vEma = (pEma+1)/2, vRsi = (pRsi+1)/2, vMacd = (pMacd+1)/2, vVol = (pVol+1)/2, vMom = (pMom+1)/2;
+  const raw = w.ema*vEma + w.rsi*vRsi + w.macd*vMacd + w.vol*vVol + w.mom*vMom;
+  let score = Math.round((raw/totalW)*100);
+  // classify
+  let rec = 'HOLD';
+  if(score >= 80) rec = 'STRONG BUY';
+  else if(score >= 60) rec = 'BUY';
+  else if(score <= 20) rec = 'STRONG SELL';
+  else if(score <= 40) rec = 'SELL';
+  else rec = 'HOLD';
+  const reason = `EMA9/21:${pEma>0?'↑':'↓'} • RSI:${rsiVal? rsiVal.toFixed(1):'n/a'} • MACD:${pMacd>0?'↑':'↓'} • Vol:${vol.toFixed(6)}`;
+  return {score, rec, reason, metrics:{ema9,ema21,rsiVal,vol,momentum}};
+}
+
+/* ========================== UI helpers ========================== */
+function renderAssetsList(rows){
+  const el = document.getElementById('assetsList');
+  if(!rows.length) { el.innerHTML = '<div class="muted">لا بيانات بعد</div>'; return; }
+  el.innerHTML = rows.map(r=>{
+    return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)">
+      <div><strong>${r.asset}</strong><div class="small muted">${r.type}</div></div>
+      <div style="text-align:right">
+        <div><strong>${r.priceDisplay}</strong></div>
+        <div class="small">${r.rec} • ${r.score!==null?r.score+'%':''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderTable(rows){
+  const tbody = document.querySelector('#recTable tbody');
+  // sort by score desc (null last)
+  rows.sort((a,b)=> (b.score===null? -1:b.score) - (a.score===null? -1:a.score));
+  tbody.innerHTML = rows.map(r=>{
+    const price = r.priceDisplay;
+    const score = r.score===null? '—' : r.score;
+    const cls = r.rec.includes('STRONG')? 'sb' : r.rec==='BUY' ? 'b' : r.rec==='SELL' ? 's' : 'h';
+    return `<tr>
+      <td>${r.asset}</td>
+      <td>${price}</td>
+      <td>${score}</td>
+      <td><span class="signal-pill ${cls}">${r.rec}</span></td>
+      <td class="small muted">${r.reason}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ========================== Main update loop ========================== */
+async function gatherAndUpdate(){
+  const checked = Array.from(document.querySelectorAll('.assetChk:checked')).map(i=>i.value);
+  if(!checked.length) return;
+  const rows = [];
+  // Split into crypto ids and fx/metal pairs
+  const cryptoIds = checked.filter(v=>!v.includes('/'));
+  const fxPairs = checked.filter(v=>v.includes('/'));
+  // 1) crypto via CoinGecko
+  let cgData = {};
+  if(cryptoIds.length){
+    const res = await fetchCryptoPrices(cryptoIds);
+    if(res) cgData = res;
+  }
+  // 2) fx/metals via exchangerate.host (for each pair)
+  const fxResults = {};
+  for(const p of fxPairs){
+    const [base,quote] = p.split('/');
+    const price = await fetchFxPrice(base, quote);
+    if(price !== null) fxResults[p] = price;
+  }
+
+  // build rows & compute rec
+  for(const a of checked){
+    if(a.includes('/')){
+      const price = fxResults[a] ?? null;
+      if(price === null){
+        rows.push({asset:a, type:'FX/Metal', priceDisplay:'—', rec:'HOLD', score:null, reason:'تعذر جلب السعر'});
+        continue;
+      }
+      const series = loadSeries(a);
+      series.push({t:Date.now(), price});
+      saveSeries(a, series);
+      const comp = computeRecommendation(series);
+      rows.push({asset:a,type:'FX/Metal', priceDisplay: price.toFixed(6), price, score: comp.score, rec: comp.rec, reason: comp.reason});
+    } else {
+      // crypto id
+      const obj = cgData[a];
+      if(!obj || !obj.usd){
+        rows.push({asset:a,type:'Crypto', priceDisplay:'—', rec:'HOLD', score:null, reason:'تعذر جلب السعر'});
+        continue;
+      }
+      const price = Number(obj.usd);
+      const series = loadSeries(a);
+      series.push({t:Date.now(), price});
+      saveSeries(a, series);
+      const comp = computeRecommendation(series);
+      rows.push({asset:a,type:'Crypto', priceDisplay: '$' + price.toFixed(2), price, score: comp.score, rec: comp.rec, reason: comp.reason});
+    }
+  }
 
   // update UI
-  document.getElementById('lastPrice').textContent = res.price.toFixed(6);
-  const decision = decideSimple(series);
-  document.getElementById('prob').textContent = decision.score !== null ? decision.score : '—';
-  const sEl = document.getElementById('signal');
-  sEl.className = 'signal ' + (decision.signal==='BUY'?'buy':decision.signal==='SELL'?'sell':'hold');
-  sEl.textContent = decision.signal;
-  document.getElementById('fetchStatus').textContent = decision.reason || 'جاهز';
+  renderAssetsList(rows);
+  renderTable(rows);
+  document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+  // chart: show first asset series
+  const first = rows.find(r=>r.price!==undefined && r.price!==null);
+  if(first){
+    const s = loadSeries(first.asset);
+    const labels = s.map(x=> new Date(x.t).toLocaleTimeString());
+    const data = s.map(x=>x.price);
+    // update chart
+    chart.data.labels = labels;
+    // ensure dataset exists
+    if(chart.data.datasets.length===0) chart.data.datasets.push({label:first.asset,data:[],borderColor:'#6ee7b7',tension:0.25,pointRadius:0});
+    chart.data.datasets[0].label = first.asset;
+    chart.data.datasets[0].data = data;
+    chart.update();
+  }
 }
 
-/* ========== Controls ========== */
+/* ========================== Controls & start/stop ========================== */
 document.getElementById('startBtn').addEventListener('click', async ()=>{
-  const pair = document.getElementById('pair').value;
+  const sec = Number(document.getElementById('pollInterval').value) || 8;
+  pollMs = Math.max(3, sec) * 1000;
   document.getElementById('startBtn').disabled = true;
   document.getElementById('stopBtn').disabled = false;
-  localStorage.removeItem(STORAGE_KEY);
-  // set return URL after PayPal to current page with param
-  const baseReturn = window.location.href.split('#')[0].split('?')[0];
-  document.getElementById('paypalReturn').value = baseReturn + '?paid=1';
-  document.getElementById('paypalCancel').value = baseReturn + '?paid=0';
-  await tick(pair);
-  intervalId = setInterval(()=> tick(pair), POLL_MS);
+  // initial gather
+  await gatherAndUpdate();
+  intervalId = setInterval(gatherAndUpdate, pollMs);
 });
 
 document.getElementById('stopBtn').addEventListener('click', ()=>{
-  if (intervalId) clearInterval(intervalId);
+  if(intervalId) clearInterval(intervalId);
   intervalId = null;
   document.getElementById('startBtn').disabled = false;
   document.getElementById('stopBtn').disabled = true;
 });
 
-/* ========== 'I paid' button (manual trigger) ========== */
-document.getElementById('iPaidBtn').addEventListener('click', ()=>{
-  // simple local activation (not secure) — you said you don't want to follow payments
-  localStorage.setItem('smartrisk_pro_paid_manual','1');
-  alert('تم تسجيل الدفع محليًا (اختبار). لاحقًا يمكنك استخدام تحقق خادم للتفعيل الآمن.');
-  // optionally enable pro features here
+document.getElementById('clearData').addEventListener('click', ()=>{
+  const keys = Object.keys(localStorage).filter(k=>k.startsWith(STORAGE_PREFIX));
+  keys.forEach(k=>localStorage.removeItem(k));
+  alert('تم مسح البيانات المحلية.');
+  location.reload();
 });
 
-/* ========== Init existing series if any ========= */
-(function init(){
-  const existing = loadSeries();
-  if (existing.length){
-    chart.data.labels = existing.map(s=> new Date(s.t).toLocaleTimeString());
-    chart.data.datasets[0].data = existing.map(s=>s.price);
-    chart.update();
-  }
-  // if URL contains ?paid=1 show thank you
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('paid') === '1') {
-    alert('شكراً للدفع! إذا أردت تفعيل Pro داخل الموقع استخدم زر "لقد دفعت".');
-  }
+document.getElementById('downloadCSV').addEventListener('click', ()=>{
+  const checked = Array.from(document.querySelectorAll('.assetChk:checked')).map(i=>i.value);
+  let csv = 'asset,timestamp,price\n';
+  checked.forEach(a=>{
+    const s=loadSeries(a);
+    s.forEach(pt => csv += `${a},${new Date(pt.t).toISOString()},${pt.price}\n`);
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'smartdata.csv'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* ========================== Init ========================== */
+(function initUI(){
+  // pre-check default assets (already in HTML)
+  // show notice about PayPal email
+  // nothing further
 })();
 </script>
+
 </body>
 </html>
