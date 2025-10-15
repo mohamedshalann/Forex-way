@@ -1,44 +1,37 @@
-    <!doctype html>
+<!doctype html>
 <html lang="ar">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SmartRisk.AI — Forex Hybrid (Tech + News + Sentiment + Risk)</title>
-<meta name="description" content="Prototype: Technical indicators + Economic calendar + News sentiment + Risk sizing. Client-side (works on GitHub Pages)" />
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>SmartRisk.AI — Forex (Live + PayPal)</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  body{font-family:system-ui,Arial; background:#071020;color:#e6eef8;margin:0;padding:16px}
+  body{font-family:system-ui,Arial;background:#071020;color:#e6eef8;margin:0;padding:16px}
   .card{background:#0b1220;padding:12px;border-radius:10px;margin-bottom:12px;box-shadow:0 8px 24px rgba(2,6,23,0.6)}
   header{display:flex;align-items:center;justify-content:space-between;gap:10px}
   select,input,button{padding:8px;border-radius:8px;border:1px solid #243142;background:#071126;color:#e6eef8}
-  #chartWrapper{height:320px}
+  #chartWrapper{height:300px}
   .signal{font-weight:700;padding:6px 10px;border-radius:8px;display:inline-block}
   .buy{background:#063b13;color:#a7f3d0;border:1px solid #0b7a3a}
   .sell{background:#4b0505;color:#ffd7d7;border:1px solid #7a1212}
   .hold{background:#2b2f3a;color:#cbd5e1;border:1px solid #3b4250}
   .muted{color:#98a0b3;font-size:13px}
-  .row{display:flex;gap:8px;align-items:center}
-  .box{background:#071126;padding:10px;border-radius:8px;border:1px solid #182233}
-  ul{margin:0;padding-left:16px}
-  .newsItem{padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)}
-  .impactHigh{color:#ffb4b4}
-  .impactMed{color:#ffd7a8}
-  .impactLow{color:#b7f5d2}
-  small{color:#98a0b3}
-  a.paylink{display:inline-block;background:#0070ba;color:white;padding:10px 14px;border-radius:8px;text-decoration:none}
-  form.payform input[type="submit"]{background:#0070ba;color:white;border:0;padding:10px 14px;border-radius:8px;cursor:pointer}
+  .cta{display:inline-block;background:linear-gradient(90deg,#0070ba,#005ea6);color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700}
+  .paynote{font-size:13px;color:#cfe6ff;margin-top:8px}
+  .center{display:flex;gap:8px;align-items:center}
+  .status{font-size:13px;color:#9fb0d6;margin-left:8px}
 </style>
 </head>
 <body>
   <div class="card">
     <header>
       <div>
-        <h2 style="margin:0">SmartRisk.AI — Forex Hybrid Prototype</h2>
-        <div class="muted">تقني + تقويم اقتصادي + معنويات الأخبار + إدارة مخاطر — يعمل مباشرة على GitHub Pages</div>
+        <h2 style="margin:0">SmartRisk.AI — Forex (Live)</h2>
+        <div class="muted">مصدر السعر: Frankfurter → fallback exchangerate.host</div>
       </div>
-      <div class="row">
+      <div class="center">
         <label>زوج:
-          <select id="pair">
+          <select id="pair" style="margin-left:8px">
             <option>EUR/USD</option>
             <option>GBP/USD</option>
             <option>USD/JPY</option>
@@ -53,424 +46,160 @@
   </div>
 
   <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:flex-start">
-      <div style="flex:1;margin-right:12px">
-        <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
-          <div>آخر سعر: <strong id="lastPrice">—</strong></div>
-          <div>إشارة: <span id="signal" class="signal hold">HOLD</span></div>
-          <div class="box">احتمال نجاح: <strong id="prob">—</strong>%</div>
-          <div style="margin-left:auto" class="muted" id="status">جاهز</div>
-        </div>
-
-        <div id="chartWrapper"><canvas id="chart"></canvas></div>
-
-        <div style="margin-top:8px" class="muted">تنبيه: أداة تعليمية — لا تعتمد عليها وحدها للتداول الفعلي.</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+      <div>آخر سعر: <strong id="lastPrice">—</strong></div>
+      <div>إشارة: <span id="signal" class="signal hold">HOLD</span></div>
+      <div class="status" id="fetchStatus">جاهز</div>
+      <div style="margin-left:auto">
+        <span class="muted">احتمال نجاح: </span><strong id="prob">—</strong>%
       </div>
+    </div>
 
-      <div style="width:360px">
-        <!-- ----- صندوق الدفع (مباشر إلى إيميلك عبر PayPal redirect) ----- -->
-        <div class="box" style="margin-bottom:8px">
-          <div class="muted">ادعم المشروع — اشترك بـ 0.10$ (دولار) للوصول لميزات Pro</div>
+    <div id="chartWrapper"><canvas id="chart"></canvas></div>
 
-          <!-- PAYPAL REDIRECT FORM (classic) -->
-          <form class="payform" action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" style="margin-top:10px">
-            <!-- required fields for 'Buy Now' -->
-            <input type="hidden" name="cmd" value="_xclick">
-            <!-- YOUR PayPal email -->
-            <input type="hidden" name="business" value="mohamedgabershalan@gmail.com">
-            <input type="hidden" name="item_name" value="SmartRisk Pro - 0.10 USD">
-            <input type="hidden" name="amount" value="0.10">
-            <input type="hidden" name="currency_code" value="USD">
-            <!-- optional: custom field to pass e.g. username -->
-            <input type="hidden" name="custom" value="smart_risk_pro_purchase">
-            <input type="submit" value="ادفع 0.10$ عبر PayPal">
-          </form>
+    <div style="margin-top:12px;display:flex;gap:12px;align-items:center">
+      <!-- Primary CTA — Pay via PayPal redirect to your email -->
+      <form id="paypalForm" action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank" style="margin:0">
+        <input type="hidden" name="cmd" value="_xclick">
+        <input type="hidden" name="business" value="mohamedgabershalan@gmail.com">
+        <input type="hidden" name="item_name" value="SmartRisk Pro - 0.10 USD">
+        <input type="hidden" name="amount" value="0.10">
+        <input type="hidden" name="currency_code" value="USD">
+        <!-- return to site after payment -->
+        <input type="hidden" name="return" value="" id="paypalReturn">
+        <input type="hidden" name="cancel_return" value="" id="paypalCancel">
+        <button id="payBtn" class="cta" type="submit">ادفع 0.10$ لتفعيل Pro الآن</button>
+      </form>
 
-          <div style="margin-top:8px" class="muted">أو استخدم PayPal.me (لو عندك رابط):</div>
-          <a class="paylink" href="https://www.paypal.me/mohamedgabershalan/0.10" target="_blank" rel="noopener noreferrer">ادفع 0.10$ عبر PayPal.me</a>
+      <!-- Quick alternative link (only one visible to avoid confusion) -->
+      <a id="paylink" class="cta" style="display:none" href="#" target="_blank" rel="noopener">ادفع الآن</a>
 
-          <div style="margin-top:8px" class="muted">ملاحظة: هذا حل مباشر — إذا أردت تفعيل الاشتراك تلقائيًا داخل الموقع نحتاج خطوة تحقق خادم (سأزودك بها عند الطلب).</div>
-        </div>
-        <!-- ---------------------------------------------------------------- -->
-
-        <div class="box" style="margin-bottom:8px">
-          <div class="muted">رأس المال (USD)</div>
-          <input id="capital" type="number" value="2000" style="width:100%;margin-top:6px" />
-          <div class="muted" style="margin-top:8px">نسبة المخاطرة القصوى للصفقة (%)</div>
-          <input id="riskPercent" type="number" value="1" style="width:100%;margin-top:6px" />
-        </div>
-
-        <div class="box" style="margin-bottom:8px">
-          <div class="muted">المخرجات</div>
-          <div style="margin-top:8px">حجم موصى به: <strong id="positionSize">—</strong> USD</div>
-          <div style="margin-top:6px" id="kellyExpl" class="muted">—</div>
-        </div>
-
-        <div class="box" style="margin-bottom:8px">
-          <div class="muted">أوزان النموذج (قابل للتعديل)</div>
-          <div style="margin-top:6px">EMA: <input id="wEma" type="number" value="25" style="width:60px" />%</div>
-          <div style="margin-top:6px">RSI: <input id="wRsi" type="number" value="18" style="width:60px" />%</div>
-          <div style="margin-top:6px">MACD: <input id="wMacd" type="number" value="18" style="width:60px" />%</div>
-          <div style="margin-top:6px">Volatility: <input id="wVol" type="number" value="15" style="width:60px" />%</div>
-          <div style="margin-top:6px">Momentum: <input id="wMom" type="number" value="12" style="width:60px" />%</div>
-          <div style="margin-top:6px">News Sentiment: <input id="wNews" type="number" value="12" style="width:60px" />%</div>
-        </div>
-
-        <div class="box" id="calendarBox" style="margin-bottom:8px">
-          <div class="muted">التقويم الاقتصادي (أحداث قادمة)</div>
-          <div id="calendarList" style="max-height:180px;overflow:auto;margin-top:8px">جلب الأحداث...</div>
-        </div>
-
-        <div class="box">
-          <div class="muted">أخبار & معنويات (آخر العناوين)</div>
-          <div id="newsList" style="max-height:220px;overflow:auto;margin-top:8px">جلب الأخبار...</div>
-        </div>
-
+      <div style="margin-left:auto">
+        <button id="iPaidBtn" style="padding:8px 10px;border-radius:8px;border:1px solid #2b3b4a;background:#0b1a28;color:#cfe6ff;cursor:pointer">لقد دفعت — حدثني</button>
+        <div class="paynote" id="payNote">الدفع يفتح في تبويب PayPal. بعد الدفع ستعود لتفعيل يدوي عبر "لقد دفعت" (أو اطلب تفعيل تلقائي لاحقًا).</div>
       </div>
     </div>
   </div>
 
 <script>
-/* ===================== إعدادات عامة ===================== */
+/* ========== إعداد الرسم ========== */
+const ctx = document.getElementById('chart').getContext('2d');
+let chart = new Chart(ctx, {
+  type:'line',
+  data: { labels:[], datasets:[
+    { label:'السعر', data:[], borderColor:'#6ee7b7', borderWidth:2, tension:0.25, pointRadius:0 }
+  ]},
+  options:{responsive:true,maintainAspectRatio:false,scales:{x:{display:false}}}
+});
+
+/* ========== State ========== */
 const POLL_MS = 8000;
 const MAX_POINTS = 500;
-const STORAGE_KEY = 'smartrisk_full_v1';
+const STORAGE_KEY = 'forexpulse_series_v_final';
 let intervalId = null;
 
-/* ===================== مؤشرات فنية (مباشرة) ===================== */
+/* ========== Helpers: fetch with fallback ========== */
+async function fetchFrankfurter(base, quote) {
+  try {
+    const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(base)}&to=${encodeURIComponent(quote)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Frankfurter HTTP ' + res.status);
+    const j = await res.json();
+    if (j.rates && j.rates[quote]) return j.rates[quote];
+    return null;
+  } catch (e) { console.warn('frankfurter fail', e); return null; }
+}
+
+async function fetchExchangerate(base, quote) {
+  try {
+    const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('exchangerate HTTP ' + res.status);
+    const j = await res.json();
+    if (j.rates && j.rates[quote]) return j.rates[quote];
+    return null;
+  } catch (e) { console.warn('exchangerate fail', e); return null; }
+}
+
+async function fetchLatest(pair) {
+  const [base,quote] = pair.split('/');
+  // Try Frankfurter first
+  let price = await fetchFrankfurter(base, quote);
+  if (price != null) {
+    return {price};
+  }
+  // fallback
+  price = await fetchExchangerate(base, quote);
+  if (price != null) {
+    return {price};
+  }
+  // both failed
+  return null;
+}
+
+/* ========== Series storage ========== */
+function loadSeries(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){return []} }
+function saveSeries(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s.slice(-MAX_POINTS))); }
+
+/* ========== Simple indicators (for signal) ========== */
 function ema(arr, period) {
   if (!arr.length) return null;
   const k = 2/(period+1);
   let prev = arr[0];
-  for (let i=1;i<arr.length;i++){
-    prev = arr[i]*k + prev*(1-k);
-  }
+  for (let i=1;i<arr.length;i++) prev = arr[i]*k + prev*(1-k);
   return prev;
 }
-function rsi(values, period=14) {
-  if (values.length <= period) return null;
-  let gains=0, losses=0;
-  for (let i=values.length-period; i<values.length; i++){
-    const d = values[i] - values[i-1];
-    if (d>0) gains+=d; else losses+=Math.abs(d);
-  }
-  if (losses===0) return 100;
-  const rs = (gains/period)/(losses/period);
-  return 100 - (100/(1+rs));
-}
-function macd(values, fast=12, slow=26, signal=9){
-  if (values.length < slow+signal) return null;
-  const macdArr = [];
-  for (let i=slow;i<values.length;i++){
-    const sub = values.slice(0,i+1);
-    const f = ema(sub,fast);
-    const s = ema(sub,slow);
-    if (f==null||s==null) continue;
-    macdArr.push(f-s);
-  }
-  if (macdArr.length < signal) return null;
-  const sig = ema(macdArr.slice(- (signal+1)), signal);
-  return { macd: macdArr[macdArr.length-1], signal: sig };
-}
-function stddev(arr){
-  if (!arr.length) return 0;
-  const mean = arr.reduce((a,b)=>a+b,0)/arr.length;
-  const v = arr.reduce((a,b)=>a+Math.pow(b-mean,2),0)/arr.length;
-  return Math.sqrt(v);
+function decideSimple(series) {
+  const prices = series.map(p=>p.price);
+  if (prices.length < 30) return {signal:'HOLD', score:null, reason:'حاجة لبيانات أكثر'};
+  const e9 = ema(prices.slice(-50),9), e21 = ema(prices.slice(-50),21);
+  if (e9==null || e21==null) return {signal:'HOLD', score:null, reason:'EMA غير متوفرة'};
+  const score = Math.round(50 + ( (e9 - e21) / Math.max(0.0001, Math.abs(e21)) ) * 500); // heuristic
+  return { signal: score >= 55 ? 'BUY' : score <=45 ? 'SELL' : 'HOLD', score: Math.max(0, Math.min(100, score)), reason:`EMA9=${e9.toFixed(6)} EMA21=${e21.toFixed(6)}`};
 }
 
-/* ===================== إدارة البيانات ===================== */
-function loadSeries(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(e){return []} }
-function saveSeries(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(s.slice(-MAX_POINTS))); }
-
-/* ===================== الرسم (Chart.js) ===================== */
-const ctx = document.getElementById('chart').getContext('2d');
-let chart = new Chart(ctx, {
-  type:'line',
-  data:{ labels:[], datasets:[
-    { label:'السعر', data:[], borderColor:'#6ee7b7', borderWidth:2, tension:0.25, pointRadius:0 },
-    { label:'EMA9', data:[], borderColor:'#93c5fd', borderWidth:1.5, tension:0.2, pointRadius:0 },
-    { label:'EMA21', data:[], borderColor:'#fda4af', borderWidth:1.5, tension:0.2, pointRadius:0 }
-  ]},
-  options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#cfe6ff'}}}, scales:{x:{display:false}, y:{grid:{color:'rgba(255,255,255,0.04)'}}}}
-});
-
-/* ===================== جلب أسعار (exchangerate.host) ===================== */
-async function fetchLatest(pair){
-  try{
-    const [base,quote] = pair.split('/');
-    const url = `https://api.exchangerate.host/latest?base=${encodeURIComponent(base)}&symbols=${encodeURIComponent(quote)}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const j = await res.json();
-    return { price: j.rates[quote], raw:j };
-  } catch(e){ console.error('fetch price err', e); return null; }
-}
-
-/* ===================== التقويم الاقتصادي ===================== */
-async function fetchEconomicCalendar() {
-  try {
-    const url = 'https://cdn-nfs.faireconomy.media/ff_calendar_thisweek.json';
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const j = await res.json();
-    return j || [];
-  } catch (e) {
-    console.warn('calendar fetch fail', e);
-    return null;
-  }
-}
-
-/* ===================== جلب الأخبار + تحويل RSS->JSON ===================== */
-async function fetchNewsForPair(pair) {
-  try {
-    const q = encodeURIComponent(pair.replace('/',' '));
-    const rss = `https://news.google.com/rss/search?q=${q}&hl=en-US&gl=US&ceid=US:en`;
-    const api = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rss)}`;
-    const res = await fetch(api);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const j = await res.json();
-    return j.items || [];
-  } catch (e) {
-    console.warn('news fetch fail', e);
-    return null;
-  }
-}
-
-/* ===================== تحليل المعنويات (بسيط) ===================== */
-const POS_WORDS = ['gain','rise','rally','surge','bull','positive','beats','better','up','strong','improve','advances','record'];
-const NEG_WORDS = ['fall','drop','slump','decline','weak','miss','worse','down','bear','cut','loss','risks','plunge'];
-
-function sentimentScore(text) {
-  if (!text) return 0;
-  const t = text.toLowerCase();
-  let score=0;
-  POS_WORDS.forEach(w => { if (t.includes(w)) score += 1; });
-  NEG_WORDS.forEach(w => { if (t.includes(w)) score -= 1; });
-  const norm = Math.max(-1, Math.min(1, score / 3));
-  return norm;
-}
-
-/* ===================== جمع الإشارات إلى احتمال ===================== */
-function computeScore(series, newsSentimentValue, calendarImpactFactor=1) {
-  const prices = series.map(s=>s.price);
-  const n = prices.length;
-  if (n < 30) return {score:null,signal:'HOLD',reason:'بيانات أقل من 30 نقطة'};
-
-  const ema9Arr = [], ema21Arr = [];
-  for (let i=0;i<prices.length;i++){
-    const sub = prices.slice(0,i+1);
-    ema9Arr.push(ema(sub,9) ?? null);
-    ema21Arr.push(ema(sub,21) ?? null);
-  }
-  const latestE9 = ema9Arr[ema9Arr.length-1];
-  const prevE9 = ema9Arr[ema9Arr.length-2];
-  const latestE21 = ema21Arr[ema21Arr.length-1];
-  const prevE21 = ema21Arr[ema21Arr.length-2];
-  const crossUp = prevE9<=prevE21 && latestE9>latestE21;
-  const crossDown = prevE9>=prevE21 && latestE9<latestE21;
-  let emaSignal = 0;
-  if (crossUp) emaSignal = 1;
-  else if (crossDown) emaSignal = -1;
-  else if (latestE9 && latestE21) emaSignal = Math.sign(latestE9 - latestE21);
-
-  const rsiVal = rsi(prices,14);
-  let rsiSignal = 0;
-  if (rsiVal != null) {
-    if (rsiVal < 30) rsiSignal = -0.8;
-    else if (rsiVal < 40) rsiSignal = -0.3;
-    else if (rsiVal <= 60) rsiSignal = 0;
-    else if (rsiVal <= 70) rsiSignal = 0.3;
-    else rsiSignal = 0.8;
-  }
-
-  const macdVal = macd(prices,12,26,9);
-  let macdSignal = 0;
-  if (macdVal) macdSignal = Math.sign(macdVal.macd - macdVal.signal);
-
-  const vol = stddev(prices.slice(-30));
-  const histVol = stddev(prices.slice(-100)) || vol || 1;
-  const volSignal = Math.max(-1, Math.min(1, (1 - vol / histVol)));
-
-  const momentum = prices[prices.length-1] - prices[Math.max(0, prices.length-5)];
-  const momSignal = Math.max(-1, Math.min(1, momentum / (Math.abs(prices[prices.length-1]) || 1) * 50));
-
-  const newsSignal = typeof newsSentimentValue === 'number' ? Math.max(-1, Math.min(1, newsSentimentValue)) : 0;
-
-  const wEma = Number(document.getElementById('wEma').value)||25;
-  const wRsi = Number(document.getElementById('wRsi').value)||18;
-  const wMacd = Number(document.getElementById('wMacd').value)||18;
-  const wVol = Number(document.getElementById('wVol').value)||15;
-  const wMom = Number(document.getElementById('wMom').value)||12;
-  const wNews = Number(document.getElementById('wNews').value)||12;
-
-  const totalWeight = wEma + wRsi + wMacd + wVol + wMom + wNews;
-
-  const parts = [
-    {name:'EMA', w:wEma, v:(emaSignal+1)/2},
-    {name:'RSI', w:wRsi, v:(rsiSignal+1)/2},
-    {name:'MACD', w:wMacd, v:(macdSignal+1)/2},
-    {name:'Vol', w:wVol, v:(volSignal+1)/2},
-    {name:'Mom', w:wMom, v:(momSignal+1)/2},
-    {name:'News', w:wNews, v:(newsSignal+1)/2}
-  ];
-  let raw=0;
-  parts.forEach(p=> raw += p.w * p.v );
-  let scorePct = Math.round((raw / totalWeight) * 100);
-
-  scorePct = Math.round(scorePct * calendarImpactFactor);
-
-  let signal = 'HOLD';
-  if (scorePct >= 62) signal = 'BUY';
-  else if (scorePct <= 38) signal = 'SELL';
-
-  const reason = `EMA:${emaSignal>0?'↑':emaSignal<0?'↓':'='} RSI:${rsiVal? rsiVal.toFixed(1):'n/a'} MACD:${macdVal? (macdVal.macd>macdVal.signal? '↑':'↓'):'n/a'} News:${newsSignal>=0? 'pos':'neg'}`;
-  return { score: scorePct, signal, parts, reason, metrics:{rsiVal, vol, momentum, macdVal} };
-}
-
-/* ===================== اقتراح الحجم (Kelly-lite) ===================== */
-function proposeSize(probPct){
-  const capital = Number(document.getElementById('capital').value) || 1000;
-  const riskPercent = Number(document.getElementById('riskPercent').value) || 1;
-  const p = probPct/100;
-  const winLoss = 1.5;
-  let edge = p - (1-p)/winLoss;
-  let kelly = edge / winLoss;
-  if (kelly < 0) kelly = 0;
-  kelly = kelly * 0.25;
-  const maxAllowed = (riskPercent/100) * capital;
-  const suggested = Math.min(kelly * capital, maxAllowed);
-  return { suggested: Number(suggested.toFixed(2)), kellyPct: (kelly*100).toFixed(3), maxAllowed };
-}
-
-/* ===================== عرض التقويم الاقتصادي ===================== */
-function renderCalendar(events){
-  const el = document.getElementById('calendarList');
-  if (!events) { el.innerHTML = '<div class="muted">تعذر جلب التقويم.</div>'; return; }
-  try {
-    let list = Array.isArray(events) ? events : (events.events || events);
-    if (!Array.isArray(list)) list = [];
-    const now = Date.now();
-    const upcoming = [];
-    for (const it of list) {
-      const impact = Number(it.impact) || 0;
-      let eventTime = it.date ? (new Date(it.date).getTime()) : null;
-      if (!eventTime && it.timestamp) eventTime = Number(it.timestamp)*1000;
-      if (!eventTime || eventTime < now - 1000*60*60*24) continue;
-      upcoming.push({title: it.title || it.event, currency: it.currency || it.symbol, impact: impact, time: eventTime});
-    }
-    upcoming.sort((a,b)=> a.time - b.time);
-    const top = upcoming.slice(0,10);
-    if (!top.length) el.innerHTML = '<div class="muted">لا أحداث مهمة قادمة.</div>';
-    else {
-      el.innerHTML = top.map(ev => {
-        const d = new Date(ev.time);
-        const impactClass = ev.impact>=3 ? 'impactHigh' : ev.impact==2 ? 'impactMed' : 'impactLow';
-        return `<div style="padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.03)"><div><strong>${ev.currency||''}</strong> — ${ev.title}</div><small>${d.toLocaleString()}</small> <div class="${impactClass}" style="float:right">${ev.impact>=3?'High':ev.impact==2?'Medium':'Low'}</div></div>`;
-      }).join('');
-    }
-  } catch(e){
-    el.innerHTML = '<div class="muted">خطأ في معالجة التقويم.</div>';
-  }
-}
-
-/* ===================== عرض الأخبار وتحليل المعنويات ===================== */
-function renderNews(items) {
-  const el = document.getElementById('newsList');
-  if (!items) { el.innerHTML = '<div class="muted">تعذر جلب الأخبار.</div>'; return; }
-  if (!items.length) { el.innerHTML = '<div class="muted">لا أخبار حديثة.</div>'; return; }
-  const top = items.slice(0,10);
-  el.innerHTML = top.map(it => {
-    const title = it.title || it.title_no_format || '';
-    const s = sentimentScore(title);
-    const color = s>0.2 ? '🟢' : s<-0.2 ? '🔴' : '🟡';
-    return `<div class="newsItem"><div>${color} <a href="${it.link}" target="_blank" style="color:#cfe6ff;text-decoration:none">${title}</a></div><small class="muted">${it.pubDate ? new Date(it.pubDate).toLocaleString() : ''}</small></div>`;
-  }).join('');
-  const avg = top.reduce((a,b)=> a + sentimentScore(b.title || ''), 0)/top.length;
-  return avg;
-}
-
-/* ===================== الدارة الرئيسية (tick) ===================== */
+/* ========== Main tick ========== */
 async function tick(pair) {
-  document.getElementById('status').textContent = 'جلب بيانات...';
+  document.getElementById('fetchStatus').textContent = 'جلب السعر...';
   const res = await fetchLatest(pair);
-  if (!res) { document.getElementById('status').textContent = 'فشل جلب السعر'; return; }
+  if (!res) {
+    document.getElementById('fetchStatus').textContent = 'فشل جلب السعر — جاري إعادة المحاولة...';
+    return;
+  }
+  document.getElementById('fetchStatus').textContent = 'تم التحديث';
   const series = loadSeries();
   series.push({t:Date.now(), price: res.price});
   saveSeries(series);
 
-  if (!window._calendarCacheTime || Date.now() - window._calendarCacheTime > 60000) {
-    window._calendarCache = await fetchEconomicCalendar();
-    window._calendarCacheTime = Date.now();
-    renderCalendar(window._calendarCache);
-  }
-
-  if (!window._newsCacheTime || Date.now() - window._newsCacheTime > 30000) {
-    const newsItems = await fetchNewsForPair(pair);
-    window._newsCache = newsItems;
-    window._newsCacheTime = Date.now();
-    const avgSent = renderNews(newsItems);
-    window._newsSentiment = typeof avgSent === 'number' ? avgSent : 0;
-  }
-
-  let calendarImpactFactor = 1;
-  try {
-    const now = Date.now();
-    const events = window._calendarCache || [];
-    const list = Array.isArray(events) ? events : (events.events||events);
-    if (Array.isArray(list)) {
-      for (const ev of list) {
-        const t = ev.date ? (new Date(ev.date).getTime()) : (ev.timestamp ? Number(ev.timestamp)*1000 : null);
-        const impact = Number(ev.impact) || 0;
-        if (t && impact >= 3 && t > now && t - now < 1000*60*60) {
-          calendarImpactFactor = 0.6;
-          break;
-        }
-        if (t && impact === 2 && t > now && t - now < 1000*60*30) {
-          calendarImpactFactor = Math.min(calendarImpactFactor, 0.8);
-        }
-      }
-    }
-  } catch(e){ calendarImpactFactor = 1; }
-
-  const newsSent = window._newsSentiment || 0;
-  const computed = computeScore(series, newsSent, calendarImpactFactor);
-
-  document.getElementById('lastPrice').textContent = res.price.toFixed(6);
-  document.getElementById('prob').textContent = computed.score !== null ? computed.score : 'n/a';
-  const sEl = document.getElementById('signal');
-  sEl.className = 'signal ' + (computed.signal==='BUY'?'buy':computed.signal==='SELL'?'sell':'hold');
-  sEl.textContent = computed.signal;
-  document.getElementById('status').textContent = computed.reason;
-
+  // update chart
   chart.data.labels = series.map(s=> new Date(s.t).toLocaleTimeString());
-  const prices = series.map(s=>s.price);
-  const ema9Arr = [], ema21Arr = [];
-  for (let i=0;i<prices.length;i++){
-    const sub = prices.slice(0,i+1);
-    ema9Arr.push(ema(sub,9) ?? null);
-    ema21Arr.push(ema(sub,21) ?? null);
-  }
-  chart.data.datasets[0].data = prices;
-  chart.data.datasets[1].data = ema9Arr;
-  chart.data.datasets[2].data = ema21Arr;
+  chart.data.datasets[0].data = series.map(s=>s.price);
   chart.update();
 
-  const pos = proposeSize(computed.score || 0);
-  document.getElementById('positionSize').textContent = pos.suggested + ' USD';
-  document.getElementById('kellyExpl').textContent = `Kelly-lite:${pos.kellyPct}% • حد مخاطر:${pos.maxAllowed} USD • NewsAvg:${newsSent.toFixed(2)} • CalFactor:${calendarImpactFactor}`;
-
+  // update UI
+  document.getElementById('lastPrice').textContent = res.price.toFixed(6);
+  const decision = decideSimple(series);
+  document.getElementById('prob').textContent = decision.score !== null ? decision.score : '—';
+  const sEl = document.getElementById('signal');
+  sEl.className = 'signal ' + (decision.signal==='BUY'?'buy':decision.signal==='SELL'?'sell':'hold');
+  sEl.textContent = decision.signal;
+  document.getElementById('fetchStatus').textContent = decision.reason || 'جاهز';
 }
 
-/* ===================== أزرار التحكم ===================== */
+/* ========== Controls ========== */
 document.getElementById('startBtn').addEventListener('click', async ()=>{
   const pair = document.getElementById('pair').value;
   document.getElementById('startBtn').disabled = true;
   document.getElementById('stopBtn').disabled = false;
   localStorage.removeItem(STORAGE_KEY);
+  // set return URL after PayPal to current page with param
+  const baseReturn = window.location.href.split('#')[0].split('?')[0];
+  document.getElementById('paypalReturn').value = baseReturn + '?paid=1';
+  document.getElementById('paypalCancel').value = baseReturn + '?paid=0';
   await tick(pair);
   intervalId = setInterval(()=> tick(pair), POLL_MS);
 });
+
 document.getElementById('stopBtn').addEventListener('click', ()=>{
   if (intervalId) clearInterval(intervalId);
   intervalId = null;
@@ -478,33 +207,28 @@ document.getElementById('stopBtn').addEventListener('click', ()=>{
   document.getElementById('stopBtn').disabled = true;
 });
 
-/* ===================== init display ===================== */
+/* ========== 'I paid' button (manual trigger) ========== */
+document.getElementById('iPaidBtn').addEventListener('click', ()=>{
+  // simple local activation (not secure) — you said you don't want to follow payments
+  localStorage.setItem('smartrisk_pro_paid_manual','1');
+  alert('تم تسجيل الدفع محليًا (اختبار). لاحقًا يمكنك استخدام تحقق خادم للتفعيل الآمن.');
+  // optionally enable pro features here
+});
+
+/* ========== Init existing series if any ========= */
 (function init(){
   const existing = loadSeries();
   if (existing.length){
-    chart.data.labels = existing.map(s => new Date(s.t).toLocaleTimeString());
-    const prices = existing.map(s=>s.price);
-    const ema9Arr = [], ema21Arr = [];
-    for (let i=0;i<prices.length;i++){
-      const sub = prices.slice(0,i+1);
-      ema9Arr.push(ema(sub,9) ?? null);
-      ema21Arr.push(ema(sub,21) ?? null);
-    }
-    chart.data.datasets[0].data = prices;
-    chart.data.datasets[1].data = ema9Arr;
-    chart.data.datasets[2].data = ema21Arr;
+    chart.data.labels = existing.map(s=> new Date(s.t).toLocaleTimeString());
+    chart.data.datasets[0].data = existing.map(s=>s.price);
     chart.update();
   }
-  (async ()=> {
-    const cal = await fetchEconomicCalendar();
-    window._calendarCache = cal; window._calendarCacheTime = Date.now();
-    renderCalendar(cal);
-    const news = await fetchNewsForPair(document.getElementById('pair').value);
-    window._newsCache = news; window._newsCacheTime = Date.now();
-    window._newsSentiment = renderNews(news);
-  })();
+  // if URL contains ?paid=1 show thank you
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('paid') === '1') {
+    alert('شكراً للدفع! إذا أردت تفعيل Pro داخل الموقع استخدم زر "لقد دفعت".');
+  }
 })();
 </script>
-
 </body>
 </html>
